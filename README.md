@@ -1,16 +1,54 @@
-# React + Vite
+# Payment Reminder App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+未払い回収に特化した、ログイン不要の割り勘管理アプリです。
 
-Currently, two official plugins are available:
+## セットアップ
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. 依存関係をインストール
 
-## React Compiler
+```bash
+npm install
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. 環境変数を作成
 
-## Expanding the ESLint configuration
+```bash
+cp .env.example .env
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`.env` に Firebase 設定値を入力してください。
+
+```env
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_PROJECT_ID=...
+```
+
+3. Firestore ルール（MVP）
+
+- URLを知っているユーザーのみアクセスする前提で、`bills` の読み書きを許可してください。
+- 認証は使わない構成です。
+
+## 実行方法
+
+```bash
+npm run dev
+```
+
+- `/` : 割り勘作成
+- `/bill/:id` : 割り勘詳細
+
+## ビルド
+
+```bash
+npm run build
+```
+
+## 実装ファイル
+
+- `src/App.jsx` 画面切り替えと状態管理
+- `src/firebase.js` Firebase 設定読み込み
+- `src/lib/firestore.js` Firestore REST API 通信
+- `src/lib/calc.js` 金額計算とメンバー生成
+- `src/lib/reminder.js` 催促文生成
+- `src/lib/storage.js` 自分識別の localStorage 管理
+- `src/components/*` UI コンポーネント群
