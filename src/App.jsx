@@ -1,122 +1,142 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import BillDashboard from './components/BillDashboard'
+import CreateBillForm from './components/CreateBillForm'
+import MemberSelector from './components/MemberSelector'
+import { createBill, lockBill, subscribeBill, updateMemberPaidStatus } from './lib/firestore'
+import { getSelectedMemberId, setSelectedMemberId } from './lib/storage'
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function getRoute() {
+  const [, segment, id] = window.location.pathname.split('/')
+  if (segment === 'bill' && id) {
+    return { mode: 'bill', billId: id }
+  }
+  return { mode: 'create', billId: '' }
 }
 
-export default App
+export default function App() {
+  const [{ mode, billId }, setRoute] = useState(() => getRoute())
+  const [bill, setBill] = useState(null)
+  const [selectedMemberId, setSelectedMember] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const onPop = () => setRoute(getRoute())
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
+  useEffect(() => {
+    if (mode !== 'bill' || !billId) return undefined
+    const stored = getSelectedMemberId(billId)
+    setSelectedMember(stored)
+
+    const unsubscribe = subscribeBill(
+      billId,
+      (data) => {
+        setBill(data)
+        setError('')
+      },
+      (err) => setError(err.message),
+    )
+
+    return unsubscribe
+  }, [billId, mode])
+
+  const selectedMember = useMemo(
+    () => bill?.members?.find((member) => member.id === selectedMemberId),
+    [bill, selectedMemberId],
+  )
+
+  const handleCreate = async (payload) => {
+    setLoading(true)
+    setError('')
+    try {
+      const id = await createBill(payload)
+      window.history.pushState({}, '', `/bill/${id}`)
+      setRoute({ mode: 'bill', billId: id })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSelectMember = (id) => {
+    setSelectedMember(id)
+    setSelectedMemberId(billId, id)
+  }
+
+  const handleTogglePaid = async (nextPaid) => {
+    if (!selectedMember) return
+    setLoading(true)
+    setError('')
+    try {
+      await updateMemberPaidStatus({
+        billId,
+        actorMemberId: selectedMember.id,
+        targetMemberId: selectedMember.id,
+        paid: nextPaid,
+      })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLock = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await lockBill({ billId })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (mode === 'create') {
+    return (
+      <main className="app-wrap">
+        <CreateBillForm onCreate={handleCreate} loading={loading} />
+        {error && <p className="error global-error">{error}</p>}
+      </main>
+    )
+  }
+
+  if (!bill) {
+    return (
+      <main className="app-wrap">
+        <section className="phone-frame">
+          <p>読み込み中...</p>
+          {error && <p className="error">{error}</p>}
+        </section>
+      </main>
+    )
+  }
+
+  return (
+    <main className="app-wrap">
+      {!selectedMember ? (
+        <MemberSelector
+          members={bill.members}
+          selectedId={selectedMemberId}
+          onSelect={handleSelectMember}
+        />
+      ) : (
+        <BillDashboard
+          bill={bill}
+          selectedMember={selectedMember}
+          onChangeSelf={() => handleSelectMember('')}
+          onTogglePaid={handleTogglePaid}
+          onLock={handleLock}
+          loading={loading}
+        />
+      )}
+      {error && <p className="error global-error">{error}</p>}
+    </main>
+  )
+}
