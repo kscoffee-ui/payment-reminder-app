@@ -73,9 +73,14 @@ function encodeValue(key, value) {
   return { nullValue: null }
 }
 
+
+function getArrayValues(value) {
+  return value?.arrayValue?.values || value?.listValue?.values || []
+}
+
 function decodeValue(key, value) {
   if (key === 'members') {
-    const values = value?.arrayValue?.values || value?.listValue?.values || []
+    const values = getArrayValues(value)
     return values.map(decodeMember)
   }
 
@@ -84,7 +89,7 @@ function decodeValue(key, value) {
   if ('integerValue' in value) return Number(value.integerValue)
   if ('booleanValue' in value) return value.booleanValue
   if ('arrayValue' in value || 'listValue' in value) {
-    const values = value.arrayValue?.values || value.listValue?.values || []
+    const values = getArrayValues(value)
     return values.map((item) => decodeValue('', item))
   }
   if ('mapValue' in value) {
