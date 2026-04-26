@@ -75,7 +75,7 @@ function encodeValue(key, value) {
 
 function decodeValue(key, value) {
   if (key === 'members') {
-    const values = value?.arrayValue?.values || []
+    const values = value?.arrayValue?.values || value?.listValue?.values || []
     return values.map(decodeMember)
   }
 
@@ -83,8 +83,9 @@ function decodeValue(key, value) {
   if ('timestampValue' in value) return value.timestampValue
   if ('integerValue' in value) return Number(value.integerValue)
   if ('booleanValue' in value) return value.booleanValue
-  if ('arrayValue' in value) {
-    return (value.arrayValue.values || []).map((item) => decodeValue('', item))
+  if ('arrayValue' in value || 'listValue' in value) {
+    const values = value.arrayValue?.values || value.listValue?.values || []
+    return values.map((item) => decodeValue('', item))
   }
   if ('mapValue' in value) {
     const fields = value.mapValue.fields || {}
