@@ -75,6 +75,7 @@ function encodeValue(key, value) {
 
 
 function getArrayValues(value) {
+  // 読み取りは arrayValue を優先し、旧データ互換のため listValue をフォールバックする
   return value?.arrayValue?.values || value?.listValue?.values || []
 }
 
