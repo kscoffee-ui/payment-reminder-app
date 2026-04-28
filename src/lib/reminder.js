@@ -1,11 +1,8 @@
-export function buildReminderMessage({ unpaidCount, paymentRate, url }) {
-  if (unpaidCount <= 1) {
-    return `ラスト1人です！\nこのリンクから確認＆支払い済みにしてください👇\n${url}`
-  }
-
-  return `現在${paymentRate}%完了！あと${unpaidCount}人です👇\nこのリンクから確認＆支払い済みにしてください。\n${url}`
-}
-
 export function createLineShareUrl(message) {
   return `https://line.me/R/msg/text/?${encodeURIComponent(message)}`
+}
+
+export function buildReminderMessage({ event, unpaidMembers, joinUrl, progressRate }) {
+  const names = unpaidMembers.map((member) => `・${member.name}`).join('\n') || 'なし'
+  return `【${event.title}】\n未払い: ${unpaidMembers.length}人\n支払い完了率: ${progressRate}%\n\n未払いメンバー\n${names}\n\n支払いはこちら\n${joinUrl}`
 }

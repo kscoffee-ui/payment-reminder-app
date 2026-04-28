@@ -1,263 +1,175 @@
-import { assertFirebaseConfig, getFirestoreUrl } from '../firebase'
+import { collectionUrl, docUrl } from '../firebase'
 
-const COLLECTION = 'bills'
-
-function randomBillId() {
-  return Math.random().toString(36).slice(2, 12)
+function randomToken() {
+  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
 }
 
-function isIsoDateString(value) {
-  return (
-    typeof value === 'string' &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value) &&
-    !Number.isNaN(Date.parse(value))
-  )
-}
-
-function encodeMember(member) {
-  return {
-    mapValue: {
-      fields: {
-        id: { stringValue: member.id },
-        name: { stringValue: member.name },
-        amount: { integerValue: String(member.amount) },
-        paid: { booleanValue: member.paid },
-        updatedAt: { timestampValue: member.updatedAt },
-        updatedBy: { stringValue: member.updatedBy || '' },
-      },
-    },
-  }
-}
-
-function decodeMember(value) {
-  const fields = value?.mapValue?.fields || {}
-  return {
-    id: fields.id?.stringValue || '',
-    name: fields.name?.stringValue || '',
-    amount: Number(fields.amount?.integerValue || 0),
-    paid: Boolean(fields.paid?.booleanValue),
-    updatedAt: fields.updatedAt?.timestampValue || '',
-    updatedBy: fields.updatedBy?.stringValue || '',
-  }
-}
-
-function encodeValue(key, value) {
-  if (key === 'members' && Array.isArray(value)) {
-    return {
-      arrayValue: {
-        values: value.map(encodeMember),
-      },
-    }
-  }
-
-  if (typeof value === 'string') {
-    if (key === 'createdAt' || key === 'updatedAt' || isIsoDateString(value)) {
-      return { timestampValue: value }
-    }
-    return { stringValue: value }
-  }
-  if (typeof value === 'number') return { integerValue: String(value) }
-  if (typeof value === 'boolean') return { booleanValue: value }
-  if (Array.isArray(value)) {
-    return { arrayValue: { values: value.map((item) => encodeValue('', item)) } }
-  }
-  if (value && typeof value === 'object') {
-    return {
-      mapValue: {
-        fields: Object.fromEntries(
-          Object.entries(value).map(([k, v]) => [k, encodeValue(k, v)]),
-        ),
-      },
-    }
+function encode(v) {
+  if (typeof v === 'string') return { stringValue: v }
+  if (typeof v === 'number') return { integerValue: String(v) }
+  if (typeof v === 'boolean') return { booleanValue: v }
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(encode) } }
+  if (v && typeof v === 'object') {
+    return { mapValue: { fields: Object.fromEntries(Object.entries(v).map(([k, val]) => [k, encode(val)])) } }
   }
   return { nullValue: null }
 }
 
-function getArrayValues(value) {
-  // 読み取りのみ listValue 互換を維持
-  return value?.arrayValue?.values || value?.listValue?.values || []
-}
-
-function decodeValue(key, value) {
-  if (key === 'members') {
-    const values = getArrayValues(value)
-    return values.map(decodeMember)
-  }
-
-  if ('stringValue' in value) return value.stringValue
-  if ('timestampValue' in value) return value.timestampValue
-  if ('integerValue' in value) return Number(value.integerValue)
-  if ('booleanValue' in value) return value.booleanValue
-  if ('arrayValue' in value || 'listValue' in value) {
-    const values = getArrayValues(value)
-    return values.map((item) => decodeValue('', item))
-  }
-  if ('mapValue' in value) {
-    const fields = value.mapValue.fields || {}
-    return Object.fromEntries(
-      Object.entries(fields).map(([k, v]) => [k, decodeValue(k, v)]),
-    )
+function decode(v) {
+  if (!v) return null
+  if ('stringValue' in v) return v.stringValue
+  if ('integerValue' in v) return Number(v.integerValue)
+  if ('booleanValue' in v) return v.booleanValue
+  if ('timestampValue' in v) return v.timestampValue
+  if ('arrayValue' in v) return (v.arrayValue.values || []).map(decode)
+  if ('mapValue' in v) {
+    const fields = v.mapValue.fields || {}
+    return Object.fromEntries(Object.entries(fields).map(([k, val]) => [k, decode(val)]))
   }
   return null
 }
 
-function toFirestoreDoc(data) {
-  return {
-    fields: Object.fromEntries(
-      Object.entries(data).map(([k, v]) => [k, encodeValue(k, v)]),
-    ),
-  }
+function toDoc(data) {
+  return { fields: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, encode(v)])) }
 }
 
-function fromFirestoreDoc(doc) {
+function fromDoc(doc) {
   const fields = doc.fields || {}
-  const value = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, decodeValue(k, v)]))
-  value._updateTime = doc.updateTime
-  return value
+  const value = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, decode(v)]))
+  return { id: doc.name.split('/').pop(), ...value }
 }
 
-function buildErrorMessage({ url, status, statusText, firestoreMessage, rawBody, cause }) {
-  return [
-    'Firestore通信に失敗しました。',
-    `url=${url}`,
-    `status=${status ?? 'FETCH_ERROR'} ${statusText ?? ''}`.trim(),
-    firestoreMessage ? `firestore=${firestoreMessage}` : '',
-    rawBody ? `body=${rawBody}` : '',
-    cause ? `cause=${cause}` : '',
-  ]
-    .filter(Boolean)
-    .join(' | ')
-}
-
-async function requestJson(url, options = {}) {
-  assertFirebaseConfig()
-
-  let res
-  try {
-    res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
-    })
-  } catch (error) {
-    const detail = buildErrorMessage({
-      url,
-      cause: error instanceof Error ? error.message : String(error),
-    })
-    console.error(detail)
-    throw new Error(detail)
-  }
-
+async function request(url, options = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options })
   const text = await res.text()
-  let json = {}
-  try {
-    json = text ? JSON.parse(text) : {}
-  } catch {
-    json = {}
-  }
-
+  const json = text ? JSON.parse(text) : {}
   if (!res.ok) {
-    const detail = buildErrorMessage({
-      url,
-      status: res.status,
-      statusText: res.statusText,
-      firestoreMessage: json?.error?.message,
-      rawBody: text,
-    })
-    console.error(detail)
-    throw new Error(detail)
+    throw new Error(json?.error?.message || 'Firestore通信に失敗しました。')
   }
-
   return json
 }
 
-export async function createBill(data) {
-  const id = randomBillId()
+export async function createEvent(payload) {
+  const participantToken = randomToken()
+  const adminToken = randomToken()
   const now = new Date().toISOString()
-  const doc = {
-    ...data,
-    id,
-    createdAt: now,
-    updatedAt: now,
-  }
 
-  await requestJson(getFirestoreUrl(`${COLLECTION}/${id}`), {
-    method: 'PATCH',
-    body: JSON.stringify(toFirestoreDoc(doc)),
+  const created = await request(collectionUrl('events'), {
+    method: 'POST',
+    body: JSON.stringify(
+      toDoc({
+        title: payload.title,
+        eventDate: payload.eventDate,
+        amountPerPerson: payload.amountPerPerson,
+        paymentMethod: payload.paymentMethod,
+        paymentInfo: payload.paymentInfo,
+        memo: payload.memo,
+        participantToken,
+        adminToken,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ),
   })
 
-  return id
+  const eventId = created.name.split('/').pop()
+  await request(docUrl(`events/${eventId}`), {
+    method: 'PATCH',
+    body: JSON.stringify(toDoc({ id: eventId, updatedAt: now })),
+  })
+
+  return { eventId, participantToken, adminToken }
 }
 
-export async function getBill(billId) {
-  const doc = await requestJson(getFirestoreUrl(`${COLLECTION}/${billId}`))
-  return fromFirestoreDoc(doc)
+export async function getEvent(eventId) {
+  const json = await request(docUrl(`events/${eventId}`))
+  return fromDoc(json)
 }
 
-export function subscribeBill(billId, onData, onError) {
+function poller(load, onData, onError) {
   let active = true
 
-  const pull = async () => {
+  const tick = async () => {
     if (!active) return
     try {
-      const bill = await getBill(billId)
-      onData(bill)
-    } catch (error) {
-      onError?.(error)
+      const data = await load()
+      onData(data)
+    } catch (e) {
+      onError?.(e)
+    } finally {
+      if (active) setTimeout(tick, 1500)
     }
   }
-
-  pull()
-  const timer = setInterval(pull, 3000)
+  tick()
   return () => {
     active = false
-    clearInterval(timer)
   }
 }
 
-export async function updateMemberPaidStatus({ billId, actorMemberId, targetMemberId, paid }) {
-  const bill = await getBill(billId)
+export function subscribeEvent(eventId, onData, onError) {
+  return poller(() => getEvent(eventId), onData, onError)
+}
 
-  if (bill.isLocked) {
-    throw new Error('この割り勘はロックされています。')
-  }
+export function subscribeMembers(eventId, onData, onError) {
+  return poller(async () => {
+    const json = await request(collectionUrl(`events/${eventId}/members`))
+    return (json.documents || []).map(fromDoc)
+  }, onData, onError)
+}
 
-  const exists = bill.members.some((member) => member.id === actorMemberId)
-  if (!exists) {
-    throw new Error('メンバー識別情報が無効です。')
-  }
+export function subscribeMember(eventId, memberId, onData, onError) {
+  return poller(async () => {
+    const json = await request(docUrl(`events/${eventId}/members/${memberId}`))
+    return fromDoc(json)
+  }, onData, onError)
+}
 
-  const nextMembers = bill.members.map((member) => {
-    if (member.id !== targetMemberId) return member
-    return {
-      ...member,
-      paid,
+export async function joinEvent({ eventId, name, paymentMethod }) {
+  const now = new Date().toISOString()
+  const created = await request(collectionUrl(`events/${eventId}/members`), {
+    method: 'POST',
+    body: JSON.stringify(toDoc({
+      name,
+      status: 'unpaid',
+      paymentMethod,
+      proofMemo: '',
+      createdAt: now,
+      updatedAt: now,
+    })),
+  })
+  const memberId = created.name.split('/').pop()
+  await request(docUrl(`events/${eventId}/members/${memberId}`), {
+    method: 'PATCH',
+    body: JSON.stringify(toDoc({ id: memberId, updatedAt: now })),
+  })
+  return memberId
+}
+
+export async function reportPayment({ eventId, memberId, proofMemo }) {
+  const member = await request(docUrl(`events/${eventId}/members/${memberId}`)).then(fromDoc)
+  if (member.status === 'confirmed') throw new Error('すでに確認済みです。')
+  if (member.status !== 'unpaid') throw new Error('この状態では報告できません。')
+
+  await request(docUrl(`events/${eventId}/members/${memberId}`), {
+    method: 'PATCH',
+    body: JSON.stringify(toDoc({
+      status: 'reported',
+      proofMemo: proofMemo.trim(),
       updatedAt: new Date().toISOString(),
-      updatedBy: actorMemberId,
-    }
-  })
-
-  const nextBill = {
-    ...bill,
-    members: nextMembers,
-    updatedAt: new Date().toISOString(),
-  }
-
-  await requestJson(getFirestoreUrl(`${COLLECTION}/${billId}`), {
-    method: 'PATCH',
-    body: JSON.stringify(toFirestoreDoc(nextBill)),
+    })),
   })
 }
 
-export async function lockBill({ billId }) {
-  const bill = await getBill(billId)
-  const nextBill = {
-    ...bill,
-    isLocked: true,
-    updatedAt: new Date().toISOString(),
-  }
+export async function confirmPayment({ eventId, memberId }) {
+  const member = await request(docUrl(`events/${eventId}/members/${memberId}`)).then(fromDoc)
+  if (member.status !== 'reported') throw new Error('報告済みの参加者のみ確認できます。')
 
-  await requestJson(getFirestoreUrl(`${COLLECTION}/${billId}`), {
+  await request(docUrl(`events/${eventId}/members/${memberId}`), {
     method: 'PATCH',
-    body: JSON.stringify(toFirestoreDoc(nextBill)),
+    body: JSON.stringify(toDoc({ status: 'confirmed', updatedAt: new Date().toISOString() })),
   })
+}
+
+export async function removeMember({ eventId, memberId }) {
+  await request(docUrl(`events/${eventId}/members/${memberId}`), { method: 'DELETE' })
 }
