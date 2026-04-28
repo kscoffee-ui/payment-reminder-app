@@ -45,10 +45,6 @@ export default function BillDashboard({
         </button>
       </div>
 
-      <ProgressHeader unpaidCount={unpaidCount} paymentRate={paymentRate} />
-      <LastOneBanner show={unpaidCount === 1} />
-      <MemberList members={bill.members} />
-
       {selectedMember && (
         <PaymentInfoCard
           paymentInfo={bill.paymentInfo}
@@ -66,6 +62,10 @@ export default function BillDashboard({
         {selectedMember?.paid ? '支払い済みを解除する' : '支払い済みにする ✓'}
       </button>
       {!selectedMember?.paid && <p className="sub cta-note">※支払いが完了したらタップ</p>}
+
+      <ProgressHeader unpaidCount={unpaidCount} paymentRate={paymentRate} />
+      <LastOneBanner show={unpaidCount === 1} />
+      <MemberList members={bill.members} />
 
       <ReminderPanel message={reminderMessage} />
 
