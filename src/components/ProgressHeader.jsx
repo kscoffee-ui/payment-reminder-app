@@ -4,9 +4,9 @@ export default function ProgressHeader({ unpaidCount, paymentRate }) {
       <div className="unpaid-kpi">
         <span className="label">あと</span>
         <span className="count">{unpaidCount}</span>
-        <span className="unit">人未払い</span>
+        <span className="unit">人 未払い</span>
       </div>
-      <p className="rate-row">支払い完了率&nbsp;{paymentRate}%</p>
+      <p className="rate-row">支払い完了率 {paymentRate}%</p>
       <div className="progress-track">
         <div className="progress-fill" style={{ width: `${paymentRate}%` }} />
       </div>

@@ -42,9 +42,17 @@ export default function CreateBillForm({ onCreate, loading }) {
 
   return (
     <form className="phone-frame" onSubmit={handleSubmit}>
-      <h1 className="screen-title">割り勘を作成</h1>
+      <header className="nav-header">
+        <span className="icon-btn" aria-hidden>
+          ←
+        </span>
+        <h1 className="nav-title">割り勘を作成</h1>
+        <span className="icon-btn ghost" aria-hidden>
+          ・
+        </span>
+      </header>
 
-      <label>合計金額</label>
+      <label className="field-label">合計金額</label>
       <div className="yen-input">
         <input
           type="number"
@@ -54,11 +62,11 @@ export default function CreateBillForm({ onCreate, loading }) {
           placeholder="12,345"
           required
         />
-        <span>円</span>
+        <span className="yen-unit">円</span>
       </div>
       <p className="sub input-note">※1円以上で入力してください</p>
 
-      <label>メンバー（1人以上）</label>
+      <label className="field-label">メンバー（1人以上）</label>
       <div className="stack">
         {members.map((name, index) => (
           <div className="member-row" key={`member-${index}`}>
@@ -68,18 +76,18 @@ export default function CreateBillForm({ onCreate, loading }) {
               placeholder="名前を入力"
               required
             />
-            <button type="button" onClick={() => removeMember(index)}>
+            <button type="button" className="remove-btn" onClick={() => removeMember(index)}>
               ×
             </button>
           </div>
         ))}
       </div>
 
-      <button type="button" className="secondary" onClick={addMember}>
+      <button type="button" className="secondary add-member" onClick={addMember}>
         ＋ メンバーを追加
       </button>
 
-      <label>支払い情報（PayPay ID / 振込先など）</label>
+      <label className="field-label">支払い情報（PayPay ID / 振込先など）</label>
       <textarea
         value={paymentInfo}
         maxLength={80}
@@ -87,6 +95,7 @@ export default function CreateBillForm({ onCreate, loading }) {
         placeholder="PayPay ID: tanaka.paypay"
         required
       />
+      <p className="sub">※あとから変更できます</p>
 
       {error && <p className="error">{error}</p>}
 
