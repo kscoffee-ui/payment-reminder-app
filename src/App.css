@@ -224,6 +224,22 @@ button:disabled {
   padding: 12px;
 }
 
+.share-card {
+  border-color: #c7d2fe;
+  background: #f8faff;
+}
+
+.share-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.share-actions button,
+.share-actions .line-btn {
+  width: 100%;
+  display: block;
+}
+
 .payment-amount {
   display: flex;
   justify-content: space-between;
