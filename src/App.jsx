@@ -70,7 +70,9 @@ function EventCreatePage() {
         paymentInfo: form.paymentInfo.trim(),
         memo: form.memo.trim(),
       })
-      move(`/admin/${created.eventId}?token=${created.adminToken}&created=1&ptoken=${created.participantToken}`)
+      const adminToken = encodeURIComponent(created.adminToken)
+      const participantToken = encodeURIComponent(created.participantToken)
+      move(`/admin/${created.eventId}?token=${adminToken}&created=1&ptoken=${participantToken}`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -106,7 +108,12 @@ function AdminPage({ eventId, token }) {
   const [error, setError] = useState('')
   const [workingId, setWorkingId] = useState('')
 
-  const joinUrl = `${window.location.origin}/join/${eventId}?token=${event?.participantToken || ''}`
+  const params = new URLSearchParams(window.location.search)
+  const created = params.get('created') === '1'
+  const participantTokenFromUrl = params.get('ptoken') || ''
+  const adminUrl = `${window.location.origin}/admin/${eventId}?token=${encodeURIComponent(token)}`
+  const joinToken = participantTokenFromUrl || event?.participantToken || ''
+  const joinUrl = `${window.location.origin}/join/${eventId}?token=${encodeURIComponent(joinToken)}`
 
   useEffect(() => {
     let stop1 = () => {}
@@ -182,6 +189,16 @@ function AdminPage({ eventId, token }) {
         <h2>参加者URL</h2>
         <a href={joinUrl}>{joinUrl}</a>
         <a className="line" href={createLineShareUrl(reminderMessage)} target="_blank" rel="noreferrer">LINEで催促</a>
+
+        {created && (
+          <>
+            <h2>作成完了</h2>
+            <p>幹事用URL</p>
+            <a href={adminUrl}>{adminUrl}</a>
+            <p>参加者URL</p>
+            <a href={joinUrl}>{joinUrl}</a>
+          </>
+        )}
 
         <h2>参加者一覧</h2>
         <ul className="list">

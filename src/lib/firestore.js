@@ -73,7 +73,7 @@ export async function createEvent(payload) {
   })
 
   const eventId = created.name.split('/').pop()
-  await request(docUrl(`events/${eventId}`), {
+  await request(`${docUrl(`events/${eventId}`)}&updateMask.fieldPaths=id&updateMask.fieldPaths=updatedAt`, {
     method: 'PATCH',
     body: JSON.stringify(toDoc({ id: eventId, updatedAt: now })),
   })
@@ -138,7 +138,7 @@ export async function joinEvent({ eventId, name, paymentMethod }) {
     })),
   })
   const memberId = created.name.split('/').pop()
-  await request(docUrl(`events/${eventId}/members/${memberId}`), {
+  await request(`${docUrl(`events/${eventId}/members/${memberId}`)}&updateMask.fieldPaths=id&updateMask.fieldPaths=updatedAt`, {
     method: 'PATCH',
     body: JSON.stringify(toDoc({ id: memberId, updatedAt: now })),
   })
