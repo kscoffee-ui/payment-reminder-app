@@ -73,10 +73,11 @@ function EventCreatePage() {
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (!form.title.trim()) return setError('イベント名は必須です。')
-    if (!form.eventDate) return setError('日付は必須です。')
-    if (Number(form.amountPerPerson) < 1) return setError('金額は1円以上で入力してください。')
-    if (!form.paymentInfo.trim()) return setError('支払い情報は必須です。')
+
+    if (!form.title.trim()) return setError('イベント名を入力してください。')
+    if (!form.eventDate) return setError('日付を入力してください。')
+    if (Number(form.amountPerPerson) < 1) return setError('1人あたりの金額は1円以上で入力してください。')
+    if (!form.paymentInfo.trim()) return setError('支払い情報を入力してください。')
 
     setLoading(true)
     try {
@@ -102,13 +103,13 @@ function EventCreatePage() {
     <main className="container">
       <form className="card form-card create-page-card" onSubmit={onSubmit}>
         <div className="section-title">
-          <h1>割り勘を作成</h1>
-          <p>イベント情報を入力して未払い回収を開始します。</p>
+          <h1>未払い回収イベントを作成</h1>
+          <p>まずはイベント情報だけ入力してください。参加者はあとからURLで自己登録します。</p>
         </div>
 
         <label className="field">
           <span>イベント名</span>
-          <input placeholder="例）飲み会" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <input placeholder="例）新歓飲み会" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </label>
 
         <label className="field">
@@ -118,7 +119,7 @@ function EventCreatePage() {
 
         <label className="field">
           <span>1人あたりの金額</span>
-          <input type="number" min="1" placeholder="2469" value={form.amountPerPerson} onChange={(e) => setForm({ ...form, amountPerPerson: e.target.value })} />
+          <input type="number" min="1" placeholder="2500" value={form.amountPerPerson} onChange={(e) => setForm({ ...form, amountPerPerson: e.target.value })} />
         </label>
 
         <label className="field">
@@ -133,18 +134,40 @@ function EventCreatePage() {
 
         <label className="field">
           <span>支払い情報</span>
-          <textarea rows="3" placeholder="PayPay ID / 振込先など" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
+          <textarea rows="3" placeholder="PayPay ID / 振込先 / 受け渡し場所など" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
         </label>
 
         <label className="field">
-          <span>メモ（任意）</span>
-          <textarea rows="2" placeholder="補足があれば入力" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} />
+          <span>任意メモ</span>
+          <textarea rows="2" placeholder="補足（集合場所や期限など）" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} />
         </label>
 
         {error && <p className="error">{error}</p>}
-        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? '作成中...' : '割り勘を作成する'}</button>
+        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? '作成中...' : 'イベントを作成する'}</button>
       </form>
     </main>
+  )
+}
+
+function CreatedScreen({ adminUrl, joinUrl, onContinue }) {
+  return (
+    <section className="card complete-card">
+      <h2>イベントを作成しました</h2>
+      <p className="sub">次に、参加者用URLを共有してください。幹事用URLはあなた専用です。</p>
+
+      <div className="url-card">
+        <p>参加者用URL（共有用）</p>
+        <a href={joinUrl}>{joinUrl}</a>
+      </div>
+
+      <div className="url-card caution">
+        <p>幹事用URL（他人に共有しない）</p>
+        <a href={adminUrl}>{adminUrl}</a>
+      </div>
+
+      <a className="btn btn-line" href={createLineShareUrl(`参加登録はこちら\n${joinUrl}`)} target="_blank" rel="noreferrer">参加者URLをLINEで共有</a>
+      <button className="btn btn-primary btn-lg" onClick={onContinue}>管理画面へ進む</button>
+    </section>
   )
 }
 
@@ -157,6 +180,7 @@ function AdminPage({ eventId, token }) {
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
   const participantTokenFromUrl = params.get('ptoken') || ''
+
   const adminUrl = `${window.location.origin}/admin/${eventId}?token=${encodeURIComponent(token)}`
   const joinToken = participantTokenFromUrl || event?.participantToken || ''
   const joinUrl = `${window.location.origin}/join/${eventId}?token=${encodeURIComponent(joinToken)}`
@@ -208,6 +232,8 @@ function AdminPage({ eventId, token }) {
     progressRate: counts.rate,
   })
 
+  const goDashboard = () => move(`/admin/${eventId}?token=${encodeURIComponent(token)}`)
+
   const confirm = async (memberId) => {
     setWorkingId(memberId)
     try {
@@ -231,6 +257,12 @@ function AdminPage({ eventId, token }) {
     }
   }
 
+  const unpaidHeadline = counts.unpaid === 0
+    ? '全員確認済みです'
+    : counts.unpaid === 1
+      ? 'ラスト1人が未払いです'
+      : `あと ${counts.unpaid} 人が未払いです`
+
   const memberCard = (member) => (
     <li key={member.id} className={`member-item status-${member.status}`}>
       <div className="member-head">
@@ -246,40 +278,38 @@ function AdminPage({ eventId, token }) {
         {member.status === 'reported' && (
           <button className="btn btn-confirm" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
         )}
-        <button className="btn btn-danger" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
+        {member.status === 'confirmed' && <span className="confirmed-note">確認済み</span>}
+        <button className="btn btn-danger btn-ghost-danger" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
       </div>
     </li>
   )
 
   return (
     <main className="container">
-      {created && (
-        <section className="card complete-card">
-          <h2>イベントを作成しました</h2>
-          <p className="sub">参加者URLを共有し、幹事URLは自分だけで保管してください。</p>
-          <div className="url-card">
-            <p>参加者用URL</p>
-            <a href={joinUrl}>{joinUrl}</a>
-          </div>
-          <div className="url-card caution">
-            <p>幹事用URL（他人に共有しない）</p>
-            <a href={adminUrl}>{adminUrl}</a>
-          </div>
-          <a className="btn btn-primary btn-lg" href={adminUrl}>管理画面へ進む</a>
-        </section>
-      )}
+      {created && <CreatedScreen adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />}
 
       <section className="card dashboard-top">
         <div className="top-bar">
           <h1>{event.title}</h1>
-          <p className="sub">{formatDate(event.eventDate)}</p>
+          <p className="sub">{formatDate(event.eventDate)} / 1人あたり {formatMoney(event.amountPerPerson)}</p>
         </div>
 
-        <div className="hero-unpaid">
-          <p>あと</p>
-          <b>{counts.unpaid}</b>
-          <p>人 未払い</p>
+        <div className={`hero-unpaid ${counts.unpaid === 0 ? 'hero-complete' : ''}`}>
+          {counts.unpaid === 0 ? (
+            <>
+              <b>100%</b>
+              <p>全員確認済み</p>
+            </>
+          ) : (
+            <>
+              <p>あと</p>
+              <b>{counts.unpaid}</b>
+              <p>人 未払い</p>
+            </>
+          )}
         </div>
+
+        <p className={`unpaid-highlight ${counts.unpaid === 1 ? 'last-one' : ''}`}>{unpaidHeadline}</p>
 
         <div>
           <p className="sub">支払い完了率 <b>{counts.rate}%</b></p>
@@ -289,7 +319,6 @@ function AdminPage({ eventId, token }) {
         </div>
 
         <div className="event-meta-grid">
-          <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
           <p>参加者数 <b>{members.length}人</b></p>
           <p className="meta-unpaid">未払い <b>{counts.unpaid}人</b></p>
           <p className="meta-reported">確認待ち <b>{counts.reported}人</b></p>
@@ -303,6 +332,7 @@ function AdminPage({ eventId, token }) {
         <div className="list-section">
           <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
           <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
+          {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
         </div>
 
         <div className="list-section">
@@ -317,17 +347,31 @@ function AdminPage({ eventId, token }) {
       </section>
 
       <section className="card reminder-card">
-        <h2>催促する</h2>
-        <p className="unpaid-highlight">あと {counts.unpaid} 人が未払いです</p>
+        <h2>LINEで催促</h2>
+        <p className="unpaid-highlight">未払い {counts.unpaid} 人</p>
         <div className="url-card">
           <p>参加者用URL</p>
           <a href={joinUrl}>{joinUrl}</a>
         </div>
         <div className="preview">
+          <p>未払い者</p>
+          {counts.unpaid > 0 ? (
+            <ul className="unpaid-list-preview">
+              {counts.unpaidMembers.map((member) => <li key={member.id}>{member.name}</li>)}
+            </ul>
+          ) : (
+            <p className="sub">未払い者はいません。</p>
+          )}
           <p>メッセージプレビュー</p>
           <pre>{reminderMessage}</pre>
         </div>
-        <a className="btn btn-line btn-lg" href={createLineShareUrl(reminderMessage)} target="_blank" rel="noreferrer">LINEで催促する</a>
+        <button
+          className="btn btn-line btn-lg"
+          disabled={counts.unpaid === 0}
+          onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
+        >
+          LINEで催促する
+        </button>
       </section>
     </main>
   )
@@ -376,6 +420,7 @@ function JoinPage({ eventId, token }) {
     clearMemberBinding(eventId)
     setMember(null)
     setName('')
+    setProofMemo('')
   }
 
   const join = async () => {
@@ -404,7 +449,7 @@ function JoinPage({ eventId, token }) {
     }
 
     setHighlightPaymentInfo(true)
-    setPaymentGuide('支払い情報を確認してお支払いください。')
+    setPaymentGuide('支払い情報カードを確認してお支払いください。')
   }
 
   const report = async () => {
@@ -431,7 +476,7 @@ function JoinPage({ eventId, token }) {
     return (
       <main className="container">
         <section className="card join-card">
-          <h1>自分の名前を選択</h1>
+          <h1>参加登録</h1>
           <div className="event-summary">
             <p>{event.title}</p>
             <p>{formatDate(event.eventDate)}</p>
@@ -453,8 +498,9 @@ function JoinPage({ eventId, token }) {
         <section className="card status-screen status-reported-bg">
           <h1>支払いを報告しました</h1>
           <p><span className="status-badge badge-reported">現在のステータス：確認待ち</span></p>
-          <p>幹事が確認すると「確認済み」になります。</p>
-          {reporting && <p className="sub">状態を更新しています...</p>}
+          <p>幹事が確認すると「確認済み」に変わります。追加操作は不要です。</p>
+          <p className="status-money">{formatMoney(event.amountPerPerson)}</p>
+          <p className="sub">{event.title}</p>
         </section>
       </main>
     )
@@ -466,7 +512,9 @@ function JoinPage({ eventId, token }) {
         <section className="card status-screen status-confirmed-bg">
           <h1>支払いが確認されました</h1>
           <p><span className="status-badge badge-confirmed">現在のステータス：確認済み</span></p>
-          <p>ご協力ありがとうございました！</p>
+          <p>お支払いありがとうございました。これで完了です。</p>
+          <p className="status-money">{formatMoney(event.amountPerPerson)}</p>
+          <p className="sub">{event.title}</p>
         </section>
       </main>
     )
