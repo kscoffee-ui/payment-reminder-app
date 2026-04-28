@@ -1,7 +1,7 @@
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   color: #111827;
-  background: #f4f4f5;
+  background: #ffffff;
 }
 
 * {
@@ -10,13 +10,15 @@
 
 body {
   margin: 0;
-  background: #f4f4f5;
+  min-height: 100vh;
+  background: #ffffff;
 }
 
 .container {
+  width: 100%;
   max-width: 430px;
   margin: 0 auto;
-  padding: 20px 14px 32px;
+  padding: 16px 14px 32px;
   display: grid;
   gap: 14px;
 }
@@ -25,26 +27,29 @@ body {
   background: #fff;
   border-radius: 18px;
   padding: 16px;
-  box-shadow: 0 8px 20px rgb(15 23 42 / 6%);
-  border: 1px solid #eceff3;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 26px rgb(15 23 42 / 6%);
   display: grid;
   gap: 12px;
 }
 
-h1, h2, h3, p {
+h1,
+h2,
+h3,
+p {
   margin: 0;
 }
 
 h1 {
-  font-size: 1.3rem;
+  font-size: 1.22rem;
 }
 
 h2 {
-  font-size: 1.1rem;
+  font-size: 1.04rem;
 }
 
 h3 {
-  font-size: 0.95rem;
+  font-size: 0.94rem;
 }
 
 input,
@@ -61,8 +66,9 @@ a {
 }
 
 .field span {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: #1f2937;
 }
 
 input,
@@ -110,7 +116,8 @@ textarea {
 }
 
 .btn-secondary {
-  background: #6b7280;
+  background: #9ca3af;
+  color: #111827;
 }
 
 .btn-confirm {
@@ -123,10 +130,6 @@ textarea {
 
 .btn-line {
   background: #06c755;
-}
-
-.form-card {
-  gap: 14px;
 }
 
 .section-title {
@@ -142,40 +145,41 @@ textarea {
 
 .error {
   color: #dc2626;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
 }
 
-.status-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+.create-page-card {
+  gap: 14px;
 }
 
-.status-box {
-  border-radius: 12px;
-  padding: 10px;
+.complete-card {
+  border-color: #d1d5db;
+}
+
+.dashboard-top {
+  gap: 14px;
+}
+
+.top-bar {
   display: grid;
   gap: 4px;
-  text-align: center;
 }
 
-.status-box b {
-  font-size: 1.2rem;
+.hero-unpaid {
+  background: #fff1f2;
+  color: #b91c1c;
+  border: 1px solid #fecdd3;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  font-weight: 700;
 }
 
-.unpaid-box {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.reported-box {
-  background: #ffedd5;
-  color: #9a3412;
-}
-
-.confirmed-box {
-  background: #dcfce7;
-  color: #166534;
+.hero-unpaid b {
+  font-size: 2.05rem;
+  line-height: 1;
 }
 
 .progress-wrap {
@@ -192,14 +196,49 @@ textarea {
   border-radius: 999px;
 }
 
+.event-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.event-meta-grid p {
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 8px 10px;
+  font-size: 0.84rem;
+  display: grid;
+  gap: 3px;
+}
+
+.meta-unpaid {
+  border-color: #fecaca !important;
+  background: #fef2f2 !important;
+  color: #991b1b;
+}
+
+.meta-reported {
+  border-color: #fed7aa !important;
+  background: #fffbeb !important;
+  color: #9a3412;
+}
+
+.meta-confirmed {
+  border-color: #bbf7d0 !important;
+  background: #f0fdf4 !important;
+  color: #166534;
+}
+
 .unpaid-highlight {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #b91c1c;
 }
 
 .url-card,
-.preview {
+.preview,
+.event-summary {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 10px;
@@ -227,6 +266,10 @@ textarea {
   white-space: pre-wrap;
   font: inherit;
   font-size: 0.82rem;
+}
+
+.participants-card {
+  gap: 12px;
 }
 
 .list-section {
@@ -259,7 +302,7 @@ textarea {
   border: 1px solid #e5e7eb;
   padding: 10px;
   display: grid;
-  gap: 6px;
+  gap: 7px;
 }
 
 .status-unpaid {
@@ -312,8 +355,24 @@ textarea {
   color: #166534;
 }
 
+.reminder-card {
+  border-color: #d1fae5;
+}
+
+.join-card {
+  gap: 14px;
+}
+
+.amount-strong {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #111827;
+}
+
 .status-screen {
   text-align: center;
+  gap: 16px;
+  padding: 22px 16px;
 }
 
 .status-reported-bg {
@@ -326,8 +385,12 @@ textarea {
   background: #f0fdf4;
 }
 
+.payment-card {
+  gap: 12px;
+}
+
 .payment-amount {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 800;
   line-height: 1;
 }
