@@ -37,15 +37,13 @@ export default function BillDashboard({
   return (
     <section className="phone-frame">
       <div className="top-row">
-        <h1>飲み会</h1>
+        <h1>
+          飲み会 <span className="date-label">(2024/05/20)</span>
+        </h1>
         <button type="button" className="link-btn" onClick={onChangeSelf}>
           名前を変更する
         </button>
       </div>
-
-      <ProgressHeader unpaidCount={unpaidCount} paymentRate={paymentRate} />
-      <LastOneBanner show={unpaidCount === 1} />
-      <MemberList members={bill.members} />
 
       {selectedMember && (
         <PaymentInfoCard
@@ -57,11 +55,17 @@ export default function BillDashboard({
 
       <button
         type="button"
+        className="cta-button"
         disabled={!canToggle || loading || !selectedMember}
         onClick={() => onTogglePaid(!selectedMember.paid)}
       >
-        {selectedMember?.paid ? '支払い済みを解除する' : '支払い済みにする'}
+        {selectedMember?.paid ? '支払い済みを解除する' : '支払い済みにする ✓'}
       </button>
+      {!selectedMember?.paid && <p className="sub cta-note">※支払いが完了したらタップ</p>}
+
+      <ProgressHeader unpaidCount={unpaidCount} paymentRate={paymentRate} />
+      <LastOneBanner show={unpaidCount === 1} />
+      <MemberList members={bill.members} />
 
       <ReminderPanel message={reminderMessage} />
 

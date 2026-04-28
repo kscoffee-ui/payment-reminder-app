@@ -1,7 +1,7 @@
 export default function MemberSelector({ members, selectedId, onSelect }) {
   return (
     <section className="phone-frame">
-      <h1>自分の名前を選択</h1>
+      <h1 className="screen-title">自分の名前を選択</h1>
       <p className="sub">あなたは誰ですか？</p>
       <div className="stack">
         {members.map((member, index) => (
@@ -17,6 +17,9 @@ export default function MemberSelector({ members, selectedId, onSelect }) {
           </label>
         ))}
       </div>
+      <p className="sub" style={{ textAlign: 'center' }}>
+        ※あとから変更できます
+      </p>
     </section>
   )
 }
