@@ -49,6 +49,15 @@ function formatMoney(value) {
   return `¥${Number(value || 0).toLocaleString('ja-JP')}`
 }
 
+function isValidHttpUrl(value) {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 function EventCreatePage() {
   const [form, setForm] = useState({
     title: '',
@@ -330,7 +339,10 @@ function JoinPage({ eventId, token }) {
   const [name, setName] = useState('')
   const [proofMemo, setProofMemo] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [joining, setJoining] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [paymentGuide, setPaymentGuide] = useState('')
+  const [highlightPaymentInfo, setHighlightPaymentInfo] = useState(false)
 
   useEffect(() => {
     let unsubEvent = () => {}
@@ -370,7 +382,7 @@ function JoinPage({ eventId, token }) {
     const trimmed = name.trim()
     if (!trimmed) return setError('名前を入力してください。')
     setError('')
-    setLoading(true)
+    setJoining(true)
     try {
       const memberId = await joinEvent({ eventId, name: trimmed, paymentMethod: event.paymentMethod })
       setMember({ id: memberId, name: trimmed, status: 'unpaid', paymentMethod: event.paymentMethod, proofMemo: '' })
@@ -378,19 +390,37 @@ function JoinPage({ eventId, token }) {
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      setJoining(false)
     }
   }
 
+  const onPay = () => {
+    setPaymentGuide('')
+    setHighlightPaymentInfo(false)
+
+    if (event.paymentMethod === 'paypay' && isValidHttpUrl(event.paymentInfo)) {
+      window.open(event.paymentInfo, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    setHighlightPaymentInfo(true)
+    setPaymentGuide('支払い情報を確認してお支払いください。')
+  }
+
   const report = async () => {
-    setLoading(true)
+    if (!member || member.status !== 'unpaid' || reporting) return
+    setReporting(true)
     setError('')
     try {
       await reportPayment({ eventId, memberId: member.id, proofMemo })
+      setMember((prev) => {
+        if (!prev) return prev
+        return { ...prev, status: 'reported', proofMemo: proofMemo.trim() }
+      })
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      setReporting(false)
     }
   }
 
@@ -408,7 +438,7 @@ function JoinPage({ eventId, token }) {
             <span>あなたの名前</span>
             <input placeholder="田中 太郎" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
-          <button className="btn btn-primary btn-lg" disabled={loading} onClick={join}>{loading ? '参加中...' : '参加する'}</button>
+          <button className="btn btn-primary btn-lg" disabled={joining} onClick={join}>{joining ? '参加中...' : '参加する'}</button>
         </section>
       </main>
     )
@@ -421,7 +451,7 @@ function JoinPage({ eventId, token }) {
           <h1>支払いを報告しました</h1>
           <p><span className="status-badge badge-reported">現在のステータス：確認待ち</span></p>
           <p>幹事が確認すると「確認済み」になります。</p>
-          <button className="btn btn-secondary btn-lg" onClick={leave}>この部屋から抜ける</button>
+          {reporting && <p className="sub">状態を更新しています...</p>}
         </section>
       </main>
     )
@@ -434,7 +464,6 @@ function JoinPage({ eventId, token }) {
           <h1>支払いが確認されました</h1>
           <p><span className="status-badge badge-confirmed">現在のステータス：確認済み</span></p>
           <p>ご協力ありがとうございました！</p>
-          <button className="btn btn-secondary btn-lg" onClick={leave}>この部屋から抜ける</button>
         </section>
       </main>
     )
@@ -446,17 +475,18 @@ function JoinPage({ eventId, token }) {
         <h1>{member.name} さんの支払い</h1>
         <p className="payment-amount">{formatMoney(event.amountPerPerson)}</p>
         <p>支払い方法: {paymentLabel(event.paymentMethod)}</p>
-        <div className="url-card">
+        <div className={`url-card ${highlightPaymentInfo ? 'payment-info-highlight' : ''}`}>
           <p>支払い情報</p>
           <p>{event.paymentInfo}</p>
           {event.memo && <p className="sub">メモ: {event.memo}</p>}
         </div>
+        {paymentGuide && <p className="sub">{paymentGuide}</p>}
         <label className="field">
           <span>支払い報告メモ（任意）</span>
           <textarea placeholder="振込名義・補足など" value={proofMemo} onChange={(e) => setProofMemo(e.target.value)} />
         </label>
-        <button className="btn btn-primary btn-lg">支払う</button>
-        <button className="btn btn-confirm btn-lg" disabled={loading} onClick={report}>{loading ? '送信中...' : '支払いを報告する'}</button>
+        <button className="btn btn-primary btn-lg" onClick={onPay}>支払う</button>
+        <button className="btn btn-confirm btn-lg" disabled={reporting} onClick={report}>{reporting ? '送信中...' : '支払いを報告する'}</button>
         <button className="btn btn-secondary" onClick={leave}>この部屋から抜ける</button>
       </section>
     </main>

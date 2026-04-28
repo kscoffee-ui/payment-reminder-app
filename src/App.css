@@ -212,6 +212,11 @@ textarea {
   background: #fffbeb;
 }
 
+.payment-info-highlight {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
 .url-card a {
   color: #2563eb;
   word-break: break-all;
