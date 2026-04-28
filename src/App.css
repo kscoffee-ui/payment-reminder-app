@@ -1,6 +1,6 @@
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  color: #111827;
+  color: #0f172a;
   background: #ffffff;
 }
 
@@ -11,24 +11,24 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #ffffff;
+  background: #fff;
 }
 
 .container {
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
-  padding: 16px 14px 32px;
+  padding: 22px 14px 40px;
   display: grid;
   gap: 14px;
 }
 
 .card {
   background: #fff;
-  border-radius: 18px;
-  padding: 16px;
+  border-radius: 20px;
+  padding: 18px 16px;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 10px 26px rgb(15 23 42 / 6%);
+  box-shadow: 0 10px 30px rgb(15 23 42 / 7%);
   display: grid;
   gap: 12px;
 }
@@ -41,11 +41,11 @@ p {
 }
 
 h1 {
-  font-size: 1.22rem;
+  font-size: 1.25rem;
 }
 
 h2 {
-  font-size: 1.04rem;
+  font-size: 1.06rem;
 }
 
 h3 {
@@ -67,7 +67,7 @@ a {
 
 .field span {
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   color: #1f2937;
 }
 
@@ -75,9 +75,9 @@ input,
 textarea,
 select {
   width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 12px;
-  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 13px;
+  padding: 13px;
   background: #fff;
   min-height: 48px;
 }
@@ -102,7 +102,7 @@ textarea {
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: default;
 }
 
@@ -112,12 +112,12 @@ textarea {
 }
 
 .btn-primary {
-  background: #111827;
+  background: #0f172a;
 }
 
 .btn-secondary {
-  background: #9ca3af;
-  color: #111827;
+  background: #e5e7eb;
+  color: #334155;
 }
 
 .btn-confirm {
@@ -125,7 +125,12 @@ textarea {
 }
 
 .btn-danger {
-  background: #dc2626;
+  background: #ef4444;
+}
+
+.btn-ghost-danger {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .btn-line {
@@ -139,8 +144,8 @@ textarea {
 
 .section-title p,
 .sub {
-  color: #6b7280;
-  font-size: 0.82rem;
+  color: #64748b;
+  font-size: 0.83rem;
 }
 
 .error {
@@ -153,16 +158,17 @@ textarea {
 }
 
 .complete-card {
-  border-color: #d1d5db;
+  border-color: #bae6fd;
+  background: #f8fdff;
 }
 
 .dashboard-top {
-  gap: 14px;
+  gap: 12px;
 }
 
 .top-bar {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .hero-unpaid {
@@ -170,16 +176,22 @@ textarea {
   color: #b91c1c;
   border: 1px solid #fecdd3;
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 12px;
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .hero-unpaid b {
-  font-size: 2.05rem;
+  font-size: 2rem;
   line-height: 1;
+}
+
+.hero-complete {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
 }
 
 .progress-wrap {
@@ -192,7 +204,7 @@ textarea {
 
 .progress-bar {
   height: 100%;
-  background: #111827;
+  background: #0f172a;
   border-radius: 999px;
 }
 
@@ -205,8 +217,8 @@ textarea {
 .event-meta-grid p {
   border-radius: 10px;
   border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  padding: 8px 10px;
+  background: #f8fafc;
+  padding: 9px 10px;
   font-size: 0.84rem;
   display: grid;
   gap: 3px;
@@ -231,15 +243,21 @@ textarea {
 }
 
 .unpaid-highlight {
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   font-weight: 800;
   color: #b91c1c;
+}
+
+.last-one {
+  color: #991b1b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .url-card,
 .preview,
 .event-summary {
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 10px;
   display: grid;
@@ -266,6 +284,15 @@ textarea {
   white-space: pre-wrap;
   font: inherit;
   font-size: 0.82rem;
+}
+
+.unpaid-list-preview {
+  margin: 0;
+  padding-left: 20px;
+  color: #991b1b;
+  font-weight: 700;
+  display: grid;
+  gap: 4px;
 }
 
 .participants-card {
@@ -335,7 +362,7 @@ textarea {
 
 .status-badge {
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 3px 8px;
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -355,8 +382,14 @@ textarea {
   color: #166534;
 }
 
+.confirmed-note {
+  color: #166534;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .reminder-card {
-  border-color: #d1fae5;
+  border-color: #bbf7d0;
 }
 
 .join-card {
@@ -364,15 +397,20 @@ textarea {
 }
 
 .amount-strong {
-  font-size: 1.55rem;
+  font-size: 1.7rem;
   font-weight: 800;
-  color: #111827;
+  color: #0f172a;
 }
 
 .status-screen {
   text-align: center;
-  gap: 16px;
-  padding: 22px 16px;
+  gap: 14px;
+  padding: 24px 16px;
+}
+
+.status-money {
+  font-size: 1.6rem;
+  font-weight: 800;
 }
 
 .status-reported-bg {
@@ -390,7 +428,7 @@ textarea {
 }
 
 .payment-amount {
-  font-size: 2.2rem;
+  font-size: 2.4rem;
   font-weight: 800;
   line-height: 1;
 }
