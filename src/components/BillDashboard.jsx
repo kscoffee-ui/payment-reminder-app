@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import LastOneBanner from './LastOneBanner'
 import MemberList from './MemberList'
 import PaymentInfoCard from './PaymentInfoCard'
+import ShareCard from './ShareCard'
 import ProgressHeader from './ProgressHeader'
 import ReminderPanel from './ReminderPanel'
 import { buildReminderMessage } from '../lib/reminder'
@@ -44,6 +45,8 @@ export default function BillDashboard({
           名前を変更する
         </button>
       </div>
+
+      <ShareCard />
 
       {selectedMember && (
         <PaymentInfoCard

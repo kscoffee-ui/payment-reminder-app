@@ -313,3 +313,24 @@ button:disabled {
     font-size: 21px;
   }
 }
+
+.share-card {
+  gap: 10px;
+}
+
+.share-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.share-actions .line-btn,
+.share-actions button {
+  min-height: 48px;
+}
+
+@media (max-width: 420px) {
+  .share-actions {
+    grid-template-columns: 1fr;
+  }
+}
