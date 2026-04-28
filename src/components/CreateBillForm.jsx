@@ -42,7 +42,7 @@ export default function CreateBillForm({ onCreate, loading }) {
 
   return (
     <form className="phone-frame" onSubmit={handleSubmit}>
-      <h1>割り勘を作成</h1>
+      <h1 className="screen-title">割り勘を作成</h1>
 
       <label>合計金額</label>
       <div className="yen-input">
@@ -51,11 +51,12 @@ export default function CreateBillForm({ onCreate, loading }) {
           min="1"
           value={totalAmount}
           onChange={(e) => setTotalAmount(e.target.value)}
-          placeholder="12345"
+          placeholder="12,345"
           required
         />
         <span>円</span>
       </div>
+      <p className="sub input-note">※1円以上で入力してください</p>
 
       <label>メンバー（1人以上）</label>
       <div className="stack">
@@ -75,7 +76,7 @@ export default function CreateBillForm({ onCreate, loading }) {
       </div>
 
       <button type="button" className="secondary" onClick={addMember}>
-        + メンバーを追加
+        ＋ メンバーを追加
       </button>
 
       <label>支払い情報（PayPay ID / 振込先など）</label>
@@ -89,7 +90,7 @@ export default function CreateBillForm({ onCreate, loading }) {
 
       {error && <p className="error">{error}</p>}
 
-      <button type="submit" disabled={!canSubmit || loading}>
+      <button type="submit" className="cta-button" disabled={!canSubmit || loading}>
         {loading ? '作成中...' : '割り勘を作成する'}
       </button>
     </form>

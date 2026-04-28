@@ -1,11 +1,13 @@
 function MemberCard({ member, order, accent }) {
   return (
-    <div className={`member-card ${accent ? 'unpaid' : ''}`}>
-      <div>
+    <div className={`member-card ${accent ? 'unpaid' : 'paid'}`}>
+      <div className="member-main">
         <strong>{member.name}</strong>
         <small>{order}</small>
       </div>
-      <span>¥{member.amount.toLocaleString('ja-JP')}</span>
+      <span>
+        {!accent && <i className="badge-paid">済</i>}¥{member.amount.toLocaleString('ja-JP')}
+      </span>
     </div>
   )
 }
