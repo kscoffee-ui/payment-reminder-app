@@ -40,6 +40,15 @@ function statusLabel(status) {
   }[status]
 }
 
+function formatDate(value) {
+  if (!value) return '-'
+  return value
+}
+
+function formatMoney(value) {
+  return `¥${Number(value || 0).toLocaleString('ja-JP')}`
+}
+
 function EventCreatePage() {
   const [form, setForm] = useState({
     title: '',
@@ -82,21 +91,49 @@ function EventCreatePage() {
 
   return (
     <main className="container">
-      <form className="card" onSubmit={onSubmit}>
-        <h1>未払い回収イベント作成</h1>
-        <input placeholder="イベント名" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <input type="date" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
-        <input type="number" min="1" placeholder="1人あたりの金額" value={form.amountPerPerson} onChange={(e) => setForm({ ...form, amountPerPerson: e.target.value })} />
-        <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}>
-          <option value="paypay">PayPay</option>
-          <option value="cash">現金</option>
-          <option value="bank">銀行振込</option>
-          <option value="other">その他</option>
-        </select>
-        <textarea placeholder="支払い情報" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
-        <textarea placeholder="任意メモ" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} />
+      <form className="card form-card" onSubmit={onSubmit}>
+        <div className="section-title">
+          <h1>未払い回収イベント作成</h1>
+          <p>必要事項を入力して、参加者URLを作成します。</p>
+        </div>
+
+        <label className="field">
+          <span>イベント名</span>
+          <input placeholder="例）飲み会" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        </label>
+
+        <label className="field">
+          <span>日付</span>
+          <input type="date" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
+        </label>
+
+        <label className="field">
+          <span>1人あたりの金額</span>
+          <input type="number" min="1" placeholder="2469" value={form.amountPerPerson} onChange={(e) => setForm({ ...form, amountPerPerson: e.target.value })} />
+        </label>
+
+        <label className="field">
+          <span>支払い方法</span>
+          <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}>
+            <option value="paypay">PayPay</option>
+            <option value="cash">現金</option>
+            <option value="bank">銀行振込</option>
+            <option value="other">その他</option>
+          </select>
+        </label>
+
+        <label className="field">
+          <span>支払い情報</span>
+          <textarea rows="3" placeholder="PayPay ID / 振込先など" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
+        </label>
+
+        <label className="field">
+          <span>メモ（任意）</span>
+          <textarea rows="2" placeholder="補足があれば入力" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} />
+        </label>
+
         {error && <p className="error">{error}</p>}
-        <button disabled={loading}>{loading ? '作成中...' : '作成する'}</button>
+        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? '作成中...' : 'イベントを作成する'}</button>
       </form>
     </main>
   )
@@ -137,11 +174,19 @@ function AdminPage({ eventId, token }) {
   }, [eventId, token])
 
   const counts = useMemo(() => {
-    const unpaid = members.filter((m) => m.status === 'unpaid').length
-    const reported = members.filter((m) => m.status === 'reported').length
-    const confirmed = members.filter((m) => m.status === 'confirmed').length
-    const rate = members.length ? Math.round((confirmed / members.length) * 100) : 0
-    return { unpaid, reported, confirmed, rate }
+    const unpaidMembers = members.filter((m) => m.status === 'unpaid')
+    const reportedMembers = members.filter((m) => m.status === 'reported')
+    const confirmedMembers = members.filter((m) => m.status === 'confirmed')
+    const rate = members.length ? Math.round((confirmedMembers.length / members.length) * 100) : 0
+    return {
+      unpaid: unpaidMembers.length,
+      reported: reportedMembers.length,
+      confirmed: confirmedMembers.length,
+      rate,
+      unpaidMembers,
+      reportedMembers,
+      confirmedMembers,
+    }
   }, [members])
 
   if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
@@ -149,7 +194,7 @@ function AdminPage({ eventId, token }) {
 
   const reminderMessage = buildReminderMessage({
     event,
-    unpaidMembers: members.filter((m) => m.status === 'unpaid'),
+    unpaidMembers: counts.unpaidMembers,
     joinUrl,
     progressRate: counts.rate,
   })
@@ -177,46 +222,103 @@ function AdminPage({ eventId, token }) {
     }
   }
 
+  const memberCard = (member) => (
+    <li key={member.id} className={`member-item status-${member.status}`}>
+      <div className="member-head">
+        <b>{member.name}</b>
+        <span>{formatMoney(event.amountPerPerson)}</span>
+      </div>
+      <div className="member-meta">
+        <span className={`status-badge badge-${member.status}`}>{statusLabel(member.status)}</span>
+        <span>{paymentLabel(member.paymentMethod)}</span>
+      </div>
+      <p className="sub">更新: {member.updatedAt || '-'} / メモ: {member.proofMemo || 'なし'}</p>
+      <div className="actions">
+        {member.status === 'reported' && (
+          <button className="btn btn-confirm" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
+        )}
+        <button className="btn btn-danger" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
+      </div>
+    </li>
+  )
+
   return (
     <main className="container">
+      {created && (
+        <section className="card">
+          <h2>イベントを作成しました</h2>
+          <p className="sub">URLを共有して参加者を集めてください。</p>
+          <div className="url-card">
+            <p>参加者用URL</p>
+            <a href={joinUrl}>{joinUrl}</a>
+          </div>
+          <div className="url-card caution">
+            <p>幹事用URL（他人に共有しない）</p>
+            <a href={adminUrl}>{adminUrl}</a>
+          </div>
+          <a className="btn btn-line btn-lg" href={createLineShareUrl(`未払い回収の参加URLです。\n${joinUrl}`)} target="_blank" rel="noreferrer">参加者URLをLINEで共有</a>
+          <a className="btn btn-primary btn-lg" href={adminUrl}>管理画面へ進む</a>
+        </section>
+      )}
+
       <section className="card">
         <h1>{event.title}</h1>
-        <p>{event.eventDate} / ¥{Number(event.amountPerPerson).toLocaleString('ja-JP')}</p>
-        <p>参加者: {members.length}人 ・ 未払い: <b>{counts.unpaid}</b>人 ・ 報告済み: {counts.reported}人 ・ 確認済み: {counts.confirmed}人</p>
-        <p>支払い完了率 {counts.rate}%</p>
-        <progress max="100" value={counts.rate} />
+        <p>{formatDate(event.eventDate)} / 1人あたり {formatMoney(event.amountPerPerson)}</p>
 
-        <h2>参加者URL</h2>
-        <a href={joinUrl}>{joinUrl}</a>
-        <a className="line" href={createLineShareUrl(reminderMessage)} target="_blank" rel="noreferrer">LINEで催促</a>
+        <div className="status-grid">
+          <article className="status-box unpaid-box">
+            <p>未払い</p>
+            <b>{counts.unpaid}人</b>
+          </article>
+          <article className="status-box reported-box">
+            <p>確認待ち</p>
+            <b>{counts.reported}人</b>
+          </article>
+          <article className="status-box confirmed-box">
+            <p>確認済み</p>
+            <b>{counts.confirmed}人</b>
+          </article>
+        </div>
 
-        {created && (
-          <>
-            <h2>作成完了</h2>
-            <p>幹事用URL</p>
-            <a href={adminUrl}>{adminUrl}</a>
-            <p>参加者URL</p>
-            <a href={joinUrl}>{joinUrl}</a>
-          </>
-        )}
+        <div>
+          <p className="sub">参加者 {members.length}人 / 支払い完了率 {counts.rate}%</p>
+          <div className="progress-wrap">
+            <div className="progress-bar" style={{ width: `${counts.rate}%` }} />
+          </div>
+        </div>
+      </section>
 
+      <section className="card">
         <h2>参加者一覧</h2>
-        <ul className="list">
-          {members.map((member) => (
-            <li key={member.id} className={member.status === 'unpaid' ? 'unpaid' : ''}>
-              <div>
-                <b>{member.name}</b> / {statusLabel(member.status)} / {paymentLabel(member.paymentMethod)}
-                <div className="sub">メモ: {member.proofMemo || 'なし'} / 更新: {member.updatedAt || '-'}</div>
-              </div>
-              <div className="actions">
-                {member.status === 'reported' && (
-                  <button disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
-                )}
-                <button className="danger" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
-              </div>
-            </li>
-          ))}
-        </ul>
+
+        <div className="list-section">
+          <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
+          <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
+        </div>
+
+        <div className="list-section">
+          <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
+          <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
+        </div>
+
+        <div className="list-section">
+          <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
+          <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>催促</h2>
+        <p className="unpaid-highlight">あと {counts.unpaid} 人が未払いです</p>
+        <div className="url-card">
+          <p>参加者用URL</p>
+          <a href={joinUrl}>{joinUrl}</a>
+        </div>
+        <div className="preview">
+          <p>メッセージプレビュー</p>
+          <pre>{reminderMessage}</pre>
+        </div>
+        <a className="btn btn-line btn-lg" href={createLineShareUrl(reminderMessage)} target="_blank" rel="noreferrer">LINEで催促する</a>
       </section>
     </main>
   )
@@ -300,10 +402,13 @@ function JoinPage({ eventId, token }) {
       <main className="container">
         <section className="card">
           <h1>参加登録</h1>
-          <p>{event.title} / {event.eventDate}</p>
-          <p>金額: ¥{Number(event.amountPerPerson).toLocaleString('ja-JP')}</p>
-          <input placeholder="あなたの名前" value={name} onChange={(e) => setName(e.target.value)} />
-          <button disabled={loading} onClick={join}>{loading ? '参加中...' : '参加する'}</button>
+          <p>{event.title}</p>
+          <p>{formatDate(event.eventDate)} / {formatMoney(event.amountPerPerson)}</p>
+          <label className="field">
+            <span>あなたの名前</span>
+            <input placeholder="田中 太郎" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <button className="btn btn-primary btn-lg" disabled={loading} onClick={join}>{loading ? '参加中...' : '参加する'}</button>
         </section>
       </main>
     )
@@ -311,13 +416,27 @@ function JoinPage({ eventId, token }) {
 
   if (member.status === 'reported') {
     return (
-      <main className="container"><section className="card"><h1>支払いを報告しました</h1><p>現在のステータス：確認待ち</p><p>幹事の確認後に「確認済み」になります。</p><button onClick={leave}>この部屋から抜ける</button></section></main>
+      <main className="container">
+        <section className="card status-screen status-reported-bg">
+          <h1>支払いを報告しました</h1>
+          <p><span className="status-badge badge-reported">現在のステータス：確認待ち</span></p>
+          <p>幹事が確認すると「確認済み」になります。</p>
+          <button className="btn btn-secondary btn-lg" onClick={leave}>この部屋から抜ける</button>
+        </section>
+      </main>
     )
   }
 
   if (member.status === 'confirmed') {
     return (
-      <main className="container"><section className="card"><h1>支払いが確認されました</h1><p>現在のステータス：確認済み</p><p>ご協力ありがとうございました！</p><button onClick={leave}>この部屋から抜ける</button></section></main>
+      <main className="container">
+        <section className="card status-screen status-confirmed-bg">
+          <h1>支払いが確認されました</h1>
+          <p><span className="status-badge badge-confirmed">現在のステータス：確認済み</span></p>
+          <p>ご協力ありがとうございました！</p>
+          <button className="btn btn-secondary btn-lg" onClick={leave}>この部屋から抜ける</button>
+        </section>
+      </main>
     )
   }
 
@@ -325,13 +444,20 @@ function JoinPage({ eventId, token }) {
     <main className="container">
       <section className="card">
         <h1>{member.name} さんの支払い</h1>
-        <p>金額: ¥{Number(event.amountPerPerson).toLocaleString('ja-JP')}</p>
+        <p className="payment-amount">{formatMoney(event.amountPerPerson)}</p>
         <p>支払い方法: {paymentLabel(event.paymentMethod)}</p>
-        <p>支払い情報: {event.paymentInfo}</p>
-        <textarea placeholder="支払い報告メモ（任意）" value={proofMemo} onChange={(e) => setProofMemo(e.target.value)} />
-        <button className="cta">支払う</button>
-        <button disabled={loading} onClick={report}>{loading ? '送信中...' : '支払いを報告する'}</button>
-        <button className="secondary" onClick={leave}>この部屋から抜ける</button>
+        <div className="url-card">
+          <p>支払い情報</p>
+          <p>{event.paymentInfo}</p>
+          {event.memo && <p className="sub">メモ: {event.memo}</p>}
+        </div>
+        <label className="field">
+          <span>支払い報告メモ（任意）</span>
+          <textarea placeholder="振込名義・補足など" value={proofMemo} onChange={(e) => setProofMemo(e.target.value)} />
+        </label>
+        <button className="btn btn-primary btn-lg">支払う</button>
+        <button className="btn btn-confirm btn-lg" disabled={loading} onClick={report}>{loading ? '送信中...' : '支払いを報告する'}</button>
+        <button className="btn btn-secondary" onClick={leave}>この部屋から抜ける</button>
       </section>
     </main>
   )
