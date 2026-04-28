@@ -100,10 +100,10 @@ function EventCreatePage() {
 
   return (
     <main className="container">
-      <form className="card form-card" onSubmit={onSubmit}>
+      <form className="card form-card create-page-card" onSubmit={onSubmit}>
         <div className="section-title">
-          <h1>未払い回収イベント作成</h1>
-          <p>必要事項を入力して、参加者URLを作成します。</p>
+          <h1>割り勘を作成</h1>
+          <p>イベント情報を入力して未払い回収を開始します。</p>
         </div>
 
         <label className="field">
@@ -142,7 +142,7 @@ function EventCreatePage() {
         </label>
 
         {error && <p className="error">{error}</p>}
-        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? '作成中...' : 'イベントを作成する'}</button>
+        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? '作成中...' : '割り勘を作成する'}</button>
       </form>
     </main>
   )
@@ -254,9 +254,9 @@ function AdminPage({ eventId, token }) {
   return (
     <main className="container">
       {created && (
-        <section className="card">
+        <section className="card complete-card">
           <h2>イベントを作成しました</h2>
-          <p className="sub">URLを共有して参加者を集めてください。</p>
+          <p className="sub">参加者URLを共有し、幹事URLは自分だけで保管してください。</p>
           <div className="url-card">
             <p>参加者用URL</p>
             <a href={joinUrl}>{joinUrl}</a>
@@ -265,39 +265,39 @@ function AdminPage({ eventId, token }) {
             <p>幹事用URL（他人に共有しない）</p>
             <a href={adminUrl}>{adminUrl}</a>
           </div>
-          <a className="btn btn-line btn-lg" href={createLineShareUrl(`未払い回収の参加URLです。\n${joinUrl}`)} target="_blank" rel="noreferrer">参加者URLをLINEで共有</a>
           <a className="btn btn-primary btn-lg" href={adminUrl}>管理画面へ進む</a>
         </section>
       )}
 
-      <section className="card">
-        <h1>{event.title}</h1>
-        <p>{formatDate(event.eventDate)} / 1人あたり {formatMoney(event.amountPerPerson)}</p>
+      <section className="card dashboard-top">
+        <div className="top-bar">
+          <h1>{event.title}</h1>
+          <p className="sub">{formatDate(event.eventDate)}</p>
+        </div>
 
-        <div className="status-grid">
-          <article className="status-box unpaid-box">
-            <p>未払い</p>
-            <b>{counts.unpaid}人</b>
-          </article>
-          <article className="status-box reported-box">
-            <p>確認待ち</p>
-            <b>{counts.reported}人</b>
-          </article>
-          <article className="status-box confirmed-box">
-            <p>確認済み</p>
-            <b>{counts.confirmed}人</b>
-          </article>
+        <div className="hero-unpaid">
+          <p>あと</p>
+          <b>{counts.unpaid}</b>
+          <p>人 未払い</p>
         </div>
 
         <div>
-          <p className="sub">参加者 {members.length}人 / 支払い完了率 {counts.rate}%</p>
+          <p className="sub">支払い完了率 <b>{counts.rate}%</b></p>
           <div className="progress-wrap">
             <div className="progress-bar" style={{ width: `${counts.rate}%` }} />
           </div>
         </div>
+
+        <div className="event-meta-grid">
+          <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
+          <p>参加者数 <b>{members.length}人</b></p>
+          <p className="meta-unpaid">未払い <b>{counts.unpaid}人</b></p>
+          <p className="meta-reported">確認待ち <b>{counts.reported}人</b></p>
+          <p className="meta-confirmed">確認済み <b>{counts.confirmed}人</b></p>
+        </div>
       </section>
 
-      <section className="card">
+      <section className="card participants-card">
         <h2>参加者一覧</h2>
 
         <div className="list-section">
@@ -316,8 +316,8 @@ function AdminPage({ eventId, token }) {
         </div>
       </section>
 
-      <section className="card">
-        <h2>催促</h2>
+      <section className="card reminder-card">
+        <h2>催促する</h2>
         <p className="unpaid-highlight">あと {counts.unpaid} 人が未払いです</p>
         <div className="url-card">
           <p>参加者用URL</p>
@@ -430,10 +430,13 @@ function JoinPage({ eventId, token }) {
   if (!member) {
     return (
       <main className="container">
-        <section className="card">
-          <h1>参加登録</h1>
-          <p>{event.title}</p>
-          <p>{formatDate(event.eventDate)} / {formatMoney(event.amountPerPerson)}</p>
+        <section className="card join-card">
+          <h1>自分の名前を選択</h1>
+          <div className="event-summary">
+            <p>{event.title}</p>
+            <p>{formatDate(event.eventDate)}</p>
+            <p className="amount-strong">{formatMoney(event.amountPerPerson)}</p>
+          </div>
           <label className="field">
             <span>あなたの名前</span>
             <input placeholder="田中 太郎" value={name} onChange={(e) => setName(e.target.value)} />
@@ -471,7 +474,7 @@ function JoinPage({ eventId, token }) {
 
   return (
     <main className="container">
-      <section className="card">
+      <section className="card payment-card">
         <h1>{member.name} さんの支払い</h1>
         <p className="payment-amount">{formatMoney(event.amountPerPerson)}</p>
         <p>支払い方法: {paymentLabel(event.paymentMethod)}</p>
