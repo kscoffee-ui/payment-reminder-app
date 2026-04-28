@@ -150,24 +150,30 @@ export async function reportPayment({ eventId, memberId, proofMemo }) {
   if (member.status === 'confirmed') throw new Error('すでに確認済みです。')
   if (member.status !== 'unpaid') throw new Error('この状態では報告できません。')
 
-  await request(docUrl(`events/${eventId}/members/${memberId}`), {
+  await request(
+    `${docUrl(`events/${eventId}/members/${memberId}`)}&updateMask.fieldPaths=status&updateMask.fieldPaths=proofMemo&updateMask.fieldPaths=updatedAt`,
+    {
     method: 'PATCH',
     body: JSON.stringify(toDoc({
       status: 'reported',
       proofMemo: proofMemo.trim(),
       updatedAt: new Date().toISOString(),
     })),
-  })
+    },
+  )
 }
 
 export async function confirmPayment({ eventId, memberId }) {
   const member = await request(docUrl(`events/${eventId}/members/${memberId}`)).then(fromDoc)
   if (member.status !== 'reported') throw new Error('報告済みの参加者のみ確認できます。')
 
-  await request(docUrl(`events/${eventId}/members/${memberId}`), {
+  await request(
+    `${docUrl(`events/${eventId}/members/${memberId}`)}&updateMask.fieldPaths=status&updateMask.fieldPaths=updatedAt`,
+    {
     method: 'PATCH',
     body: JSON.stringify(toDoc({ status: 'confirmed', updatedAt: new Date().toISOString() })),
-  })
+    },
+  )
 }
 
 export async function removeMember({ eventId, memberId }) {
