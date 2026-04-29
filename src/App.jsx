@@ -208,7 +208,7 @@ function AdminPage({ eventId, token }) {
     }
   }, [eventId, token])
 
-  const safeMembers = Array.isArray(members) ? members : []
+  const safeMembers = useMemo(() => (Array.isArray(members) ? members : []), [members])
 
   const counts = useMemo(() => {
     const unpaidMembers = safeMembers.filter((m) => m.status === 'unpaid')
@@ -226,20 +226,22 @@ function AdminPage({ eventId, token }) {
     }
   }, [safeMembers])
 
-  if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
-  if (!event) return <main className="container"><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
-
-  const reminderMessage = buildReminderMessage({
-    event,
-    unpaidMembers: counts.unpaidMembers,
-    joinUrl,
-    progressRate: counts.rate,
-  })
-
   const filteredMembers = useMemo(() => {
     if (memberStatusFilter === 'all') return safeMembers
     return safeMembers.filter((member) => member.status === memberStatusFilter)
   }, [memberStatusFilter, safeMembers])
+
+  const reminderMessage = useMemo(() => {
+    if (!event) return ''
+    return buildReminderMessage({
+      event,
+      unpaidMembers: counts.unpaidMembers,
+      joinUrl,
+      progressRate: counts.rate,
+    })
+  }, [counts.rate, counts.unpaidMembers, event, joinUrl])
+
+  if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
 
   const goDashboard = () => move(`/admin/${eventId}?token=${encodeURIComponent(token)}`)
 
@@ -250,6 +252,7 @@ function AdminPage({ eventId, token }) {
       </main>
     )
   }
+  if (!event) return <main className="container"><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
   const confirm = async (memberId) => {
     setWorkingId(memberId)
@@ -282,7 +285,7 @@ function AdminPage({ eventId, token }) {
 
 
 
-  const AdminBottomNav = () => (
+  const adminBottomNav = (
     <nav className="admin-bottom-nav" aria-label="幹事メニュー">
       <button className={`admin-bottom-nav__item ${activeAdminTab === 'dashboard' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('dashboard')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
@@ -467,7 +470,7 @@ function AdminPage({ eventId, token }) {
       </section>
       )}
 
-      <AdminBottomNav />
+      {adminBottomNav}
     </main>
   )
 }
@@ -476,20 +479,29 @@ function AdminPage({ eventId, token }) {
 class AdminErrorBoundary extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false }
+    this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
   }
 
-  componentDidCatch(error) {
-    console.error('AdminPage render error:', error)
+  componentDidCatch(error, errorInfo) {
+    console.error('AdminErrorBoundary caught an error:', error, errorInfo)
   }
 
   render() {
     if (this.state.hasError) {
-      return <main className="container"><section className="card"><p className="error">管理画面の表示中にエラーが発生しました。画面を再読み込みしてください。</p></section></main>
+      return (
+        <main className="container">
+          <section className="card">
+            <p className="error">管理画面の表示中にエラーが発生しました。画面を再読み込みしてください。</p>
+            {import.meta.env.DEV && this.state.error && (
+              <pre className="error-debug">{String(this.state.error.message || this.state.error)}</pre>
+            )}
+          </section>
+        </main>
+      )
     }
     return this.props.children
   }
