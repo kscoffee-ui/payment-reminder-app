@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import {
   confirmPayment,
@@ -208,11 +208,13 @@ function AdminPage({ eventId, token }) {
     }
   }, [eventId, token])
 
+  const safeMembers = Array.isArray(members) ? members : []
+
   const counts = useMemo(() => {
-    const unpaidMembers = members.filter((m) => m.status === 'unpaid')
-    const reportedMembers = members.filter((m) => m.status === 'reported')
-    const confirmedMembers = members.filter((m) => m.status === 'confirmed')
-    const rate = members.length ? Math.round((confirmedMembers.length / members.length) * 100) : 0
+    const unpaidMembers = safeMembers.filter((m) => m.status === 'unpaid')
+    const reportedMembers = safeMembers.filter((m) => m.status === 'reported')
+    const confirmedMembers = safeMembers.filter((m) => m.status === 'confirmed')
+    const rate = safeMembers.length ? Math.round((confirmedMembers.length / safeMembers.length) * 100) : 0
     return {
       unpaid: unpaidMembers.length,
       reported: reportedMembers.length,
@@ -222,10 +224,10 @@ function AdminPage({ eventId, token }) {
       reportedMembers,
       confirmedMembers,
     }
-  }, [members])
+  }, [safeMembers])
 
   if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
-  if (!event) return <main className="container"><section className="card"><p>読み込み中...</p></section></main>
+  if (!event) return <main className="container"><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
   const reminderMessage = buildReminderMessage({
     event,
@@ -233,6 +235,11 @@ function AdminPage({ eventId, token }) {
     joinUrl,
     progressRate: counts.rate,
   })
+
+  const filteredMembers = useMemo(() => {
+    if (memberStatusFilter === 'all') return safeMembers
+    return safeMembers.filter((member) => member.status === memberStatusFilter)
+  }, [memberStatusFilter, safeMembers])
 
   const goDashboard = () => move(`/admin/${eventId}?token=${encodeURIComponent(token)}`)
 
@@ -266,11 +273,6 @@ function AdminPage({ eventId, token }) {
       setWorkingId('')
     }
   }
-
-  const filteredMembers = useMemo(() => {
-    if (memberStatusFilter === 'all') return members
-    return members.filter((member) => member.status === memberStatusFilter)
-  }, [memberStatusFilter, members])
 
   const unpaidHeadline = counts.unpaid === 0
     ? '全員確認済みです'
@@ -340,7 +342,7 @@ function AdminPage({ eventId, token }) {
           <section className="card admin-card">
             <h2>ステータスサマリー</h2>
             <div className="admin-summary-grid">
-              <div className="admin-summary-card summary-neutral"><span>参加者数</span><b>{members.length}</b></div>
+              <div className="admin-summary-card summary-neutral"><span>参加者数</span><b>{safeMembers.length}</b></div>
               <div className="admin-summary-card summary-unpaid"><span>未払い</span><b>{counts.unpaid}</b></div>
               <div className="admin-summary-card summary-reported"><span>報告済み</span><b>{counts.reported}</b></div>
               <div className="admin-summary-card summary-confirmed"><span>確認済み</span><b>{counts.confirmed}</b></div>
@@ -387,7 +389,7 @@ function AdminPage({ eventId, token }) {
         <h2>参加者一覧</h2>
 
         <div className="status-pill-row" role="tablist" aria-label="参加者ステータスフィルター">
-          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて（{members.length}）</button>
+          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて（{safeMembers.length}）</button>
           <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い（{counts.unpaid}）</button>
           <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>報告済み（{counts.reported}）</button>
           <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み（{counts.confirmed}）</button>
@@ -468,6 +470,29 @@ function AdminPage({ eventId, token }) {
       <AdminBottomNav />
     </main>
   )
+}
+
+
+class AdminErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error) {
+    console.error('AdminPage render error:', error)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <main className="container"><section className="card"><p className="error">管理画面の表示中にエラーが発生しました。画面を再読み込みしてください。</p></section></main>
+    }
+    return this.props.children
+  }
 }
 
 function JoinPage({ eventId, token }) {
@@ -563,7 +588,7 @@ function JoinPage({ eventId, token }) {
   }
 
   if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
-  if (!event) return <main className="container"><section className="card"><p>読み込み中...</p></section></main>
+  if (!event) return <main className="container"><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
   if (!member) {
     return (
@@ -646,7 +671,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  if (route.mode === 'admin') return <AdminPage eventId={route.eventId} token={route.token} />
+  if (route.mode === 'admin') return <AdminErrorBoundary><AdminPage eventId={route.eventId} token={route.token} /></AdminErrorBoundary>
   if (route.mode === 'join') return <JoinPage eventId={route.eventId} token={route.token} />
   return <EventCreatePage />
 }
