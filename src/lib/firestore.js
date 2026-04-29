@@ -179,3 +179,22 @@ export async function confirmPayment({ eventId, memberId }) {
 export async function removeMember({ eventId, memberId }) {
   await request(docUrl(`events/${eventId}/members/${memberId}`), { method: 'DELETE' })
 }
+
+export async function updateEventInfo(eventId, payload) {
+  const now = new Date().toISOString()
+  await request(
+    `${docUrl(`events/${eventId}`)}&updateMask.fieldPaths=title&updateMask.fieldPaths=eventDate&updateMask.fieldPaths=amountPerPerson&updateMask.fieldPaths=paymentMethod&updateMask.fieldPaths=paymentInfo&updateMask.fieldPaths=memo&updateMask.fieldPaths=updatedAt`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(toDoc({
+        title: payload.title,
+        eventDate: payload.eventDate,
+        amountPerPerson: payload.amountPerPerson,
+        paymentMethod: payload.paymentMethod,
+        paymentInfo: payload.paymentInfo,
+        memo: payload.memo,
+        updatedAt: now,
+      })),
+    },
+  )
+}
