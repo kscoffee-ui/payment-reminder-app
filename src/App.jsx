@@ -69,15 +69,6 @@ function openLineShare(message) {
   window.open(lineShareUrl, '_blank', 'noopener,noreferrer')
 }
 
-function isValidHttpUrl(value) {
-  try {
-    const parsed = new URL(value)
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
-
 function EventCreatePage() {
   const [form, setForm] = useState({
     title: '',
@@ -695,8 +686,6 @@ function JoinPage({ eventId, token }) {
   const [error, setError] = useState('')
   const [joining, setJoining] = useState(false)
   const [reporting, setReporting] = useState(false)
-  const [paymentGuide, setPaymentGuide] = useState('')
-  const [highlightPaymentInfo, setHighlightPaymentInfo] = useState(false)
 
   useEffect(() => {
     let unsubEvent = () => {}
@@ -747,19 +736,6 @@ function JoinPage({ eventId, token }) {
     } finally {
       setJoining(false)
     }
-  }
-
-  const onPay = () => {
-    setPaymentGuide('')
-    setHighlightPaymentInfo(false)
-
-    if (event.paymentMethod === 'paypay' && isValidHttpUrl(event.paymentInfo)) {
-      window.open(event.paymentInfo, '_blank', 'noopener,noreferrer')
-      return
-    }
-
-    setHighlightPaymentInfo(true)
-    setPaymentGuide('支払い情報カードを確認してお支払いください。')
   }
 
   const report = async () => {
@@ -834,20 +810,25 @@ function JoinPage({ eventId, token }) {
     <main className="container admin-shell">
       <section className="card payment-card">
         <h1>{member.name} さんの支払い</h1>
-        <p className="payment-amount">{formatMoney(event.amountPerPerson)}</p>
-        <p>支払い方法: {paymentLabel(event.paymentMethod)}</p>
-        <div className={`url-card ${highlightPaymentInfo ? 'payment-info-highlight' : ''}`}>
-          <p>支払い情報</p>
-          <p>{event.paymentInfo}</p>
+        <div className="cash-payment-summary">
+          <p className="sub">会費</p>
+          <p className="payment-amount">{formatMoney(event.amountPerPerson)}</p>
+        </div>
+        <div className="cash-guidance">
+          <p className="cash-guidance-title">支払い方法</p>
+          <p>現金で幹事に直接渡してください。</p>
+          <p className="sub">支払いが終わったら、下のボタンから報告してください。幹事が確認すると、支払い済みになります。</p>
+        </div>
+        <div className="url-card">
+          <p>幹事からの案内</p>
+          <p>{event.paymentInfo || '当日、幹事に直接ご確認ください。'}</p>
           {event.memo && <p className="sub">メモ: {event.memo}</p>}
         </div>
-        {paymentGuide && <p className="sub">{paymentGuide}</p>}
         <label className="field">
           <span>支払い報告メモ（任意）</span>
           <textarea placeholder="振込名義・補足など" value={proofMemo} onChange={(e) => setProofMemo(e.target.value)} />
         </label>
-        <button className="btn btn-primary btn-lg" onClick={onPay}>支払う</button>
-        <button className="btn btn-confirm btn-lg" disabled={reporting} onClick={report}>{reporting ? '送信中...' : '支払いを報告する'}</button>
+        <button className="btn btn-confirm btn-lg participant-main-cta" disabled={reporting} onClick={report}>{reporting ? '送信中...' : '現金で支払ったので報告する'}</button>
         <button className="btn btn-secondary" onClick={leave}>この部屋から抜ける</button>
       </section>
     </main>
