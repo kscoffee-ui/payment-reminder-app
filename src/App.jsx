@@ -235,6 +235,14 @@ function AdminPage({ eventId, token }) {
 
   const goDashboard = () => move(`/admin/${eventId}?token=${encodeURIComponent(token)}`)
 
+  if (created) {
+    return (
+      <main className="container">
+        <CreatedScreen adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />
+      </main>
+    )
+  }
+
   const confirm = async (memberId) => {
     setWorkingId(memberId)
     try {
@@ -312,8 +320,6 @@ function AdminPage({ eventId, token }) {
 
   return (
     <main className="container admin-shell">
-      {created && <CreatedScreen adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />}
-
       {activeAdminTab === 'dashboard' && (
         <>
           <section className="card admin-card">
