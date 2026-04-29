@@ -290,21 +290,21 @@ function AdminPage({ eventId, token }) {
   )
 
   const memberCard = (member) => (
-    <li key={member.id} className={`member-item status-${member.status}`}>
+    <li key={member.id} className={`member-row-card status-${member.status}`}>
       <div className="member-head">
         <b>{member.name}</b>
-        <span>{formatMoney(event.amountPerPerson)}</span>
+        <span className="member-amount">{formatMoney(event.amountPerPerson)}</span>
       </div>
       <div className="member-meta">
-        <span className={`status-badge badge-${member.status}`}>{statusLabel(member.status)}</span>
-        <span>{paymentLabel(member.paymentMethod)}</span>
+        <span className={`status-badge badge-${member.status}`}>{member.status === 'reported' ? '確認待ち' : statusLabel(member.status)}</span>
+        <span className="sub">{paymentLabel(member.paymentMethod)}</span>
       </div>
-      <p className="sub">更新: {member.updatedAt || '-'} / メモ: {member.proofMemo || 'なし'}</p>
+      {member.status === 'reported' && <p className="sub">報告メモ: {member.proofMemo || 'なし'}</p>}
+      <p className="sub">更新: {member.updatedAt || '-'}</p>
       <div className="actions">
         {member.status === 'reported' && (
           <button className="btn btn-confirm" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
         )}
-        {member.status === 'confirmed' && <span className="confirmed-note">確認済み</span>}
         <button className="btn btn-danger btn-ghost-danger" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
       </div>
     </li>
@@ -316,76 +316,69 @@ function AdminPage({ eventId, token }) {
 
       {activeAdminTab === 'dashboard' && (
         <>
-      <section className="card dashboard-top">
-        <div className="top-bar">
-          <h1>{event.title}</h1>
-          <p className="sub">{formatDate(event.eventDate)} / 1人あたり {formatMoney(event.amountPerPerson)}</p>
-        </div>
+          <section className="card admin-card">
+            <h2>イベント概要</h2>
+            <div className="event-meta-grid">
+              <p>イベント名 <b>{event.title}</b></p>
+              <p>日付 <b>{formatDate(event.eventDate)}</b></p>
+              <p>1人あたりの金額 <b>{formatMoney(event.amountPerPerson)}</b></p>
+            </div>
+          </section>
 
-        <div className={`hero-unpaid ${counts.unpaid === 0 ? 'hero-complete' : ''}`}>
-          {counts.unpaid === 0 ? (
-            <>
-              <b>100%</b>
-              <p>全員確認済み</p>
-            </>
-          ) : (
-            <>
-              <p>あと</p>
-              <b>{counts.unpaid}</b>
-              <p>人 未払い</p>
-            </>
-          )}
-        </div>
+          <section className="card admin-card">
+            <h2>ステータスサマリー</h2>
+            <div className="admin-summary-grid">
+              <div className="admin-summary-card summary-neutral"><span>参加者数</span><b>{members.length}</b></div>
+              <div className="admin-summary-card summary-unpaid"><span>未払い</span><b>{counts.unpaid}</b></div>
+              <div className="admin-summary-card summary-reported"><span>報告済み</span><b>{counts.reported}</b></div>
+              <div className="admin-summary-card summary-confirmed"><span>確認済み</span><b>{counts.confirmed}</b></div>
+            </div>
+          </section>
 
-        <p className={`unpaid-highlight ${counts.unpaid === 1 ? 'last-one' : ''}`}>{unpaidHeadline}</p>
+          <section className="card admin-progress-card">
+            <p className="sub">支払い完了率</p>
+            <p className="payment-amount">{counts.rate}%</p>
+            <div className="admin-progress-bar"><div className="admin-progress-fill" style={{ width: `${counts.rate}%` }} /></div>
+            <p className={`unpaid-highlight ${counts.unpaid === 1 ? 'last-one' : ''}`}>{unpaidHeadline}</p>
+          </section>
 
-        <div>
-          <p className="sub">支払い完了率 <b>{counts.rate}%</b></p>
-          <div className="progress-wrap">
-            <div className="progress-bar" style={{ width: `${counts.rate}%` }} />
-          </div>
-        </div>
+          <section className="card admin-card">
+            <h2>未払い者</h2>
+            {counts.unpaid > 0 ? (
+              <ul className="unpaid-list-preview">
+                {counts.unpaidMembers.map((member) => <li key={member.id}>{member.name}</li>)}
+              </ul>
+            ) : (
+              <p className="sub">未払い者はいません。全員確認済みです。</p>
+            )}
+          </section>
 
-        <div className="event-meta-grid">
-          <p>参加者数 <b>{members.length}人</b></p>
-          <p className="meta-unpaid">未払い <b>{counts.unpaid}人</b></p>
-          <p className="meta-reported">確認待ち <b>{counts.reported}人</b></p>
-          <p className="meta-confirmed">確認済み <b>{counts.confirmed}人</b></p>
-        </div>
-      </section>
-      <section className="card reminder-card">
-        <h2>LINEで催促</h2>
-        <p className="unpaid-highlight">未払い {counts.unpaid} 人</p>
-        <div className="url-card">
-          <p>参加者用URL</p>
-          <a href={joinUrl}>{joinUrl}</a>
-        </div>
-        <div className="preview">
-          <p>未払い者</p>
-          {counts.unpaid > 0 ? (
-            <ul className="unpaid-list-preview">
-              {counts.unpaidMembers.map((member) => <li key={member.id}>{member.name}</li>)}
-            </ul>
-          ) : (
-            <p className="sub">未払い者はいません。</p>
-          )}
-          <p>メッセージプレビュー</p>
-          <pre>{reminderMessage}</pre>
-        </div>
-        <button
-          className="btn btn-line btn-lg"
-          disabled={counts.unpaid === 0}
-          onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
-        >
-          LINEで催促する
-        </button>
-      </section>
+          <section className="card reminder-card">
+            <h2>LINEで催促</h2>
+            <button
+              className="btn btn-line btn-lg"
+              disabled={counts.unpaid === 0}
+              onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
+            >
+              LINEで催促する
+            </button>
+            <div className="url-card">
+              <p>参加者用URL（共有用）</p>
+              <a href={joinUrl}>{joinUrl}</a>
+            </div>
+          </section>
         </>
       )}
 
       {activeAdminTab === 'members' && (
-      <section className="card participants-card">
+      <section className="card participants-card admin-card">
         <h2>参加者一覧</h2>
+
+        <div className="status-pill-row">
+          <span className="status-pill pill-unpaid">未払い（{counts.unpaid}）</span>
+          <span className="status-pill pill-reported">報告済み（{counts.reported}）</span>
+          <span className="status-pill pill-confirmed">確認済み（{counts.confirmed}）</span>
+        </div>
 
         <div className="list-section">
           <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
@@ -406,7 +399,7 @@ function AdminPage({ eventId, token }) {
       )}
 
       {activeAdminTab === 'settings' && (
-      <section className="card">
+      <section className="card admin-card">
         <h2>設定 / イベント情報</h2>
         <div className="event-meta-grid">
           <p>イベント名 <b>{event.title}</b></p>
@@ -414,17 +407,35 @@ function AdminPage({ eventId, token }) {
           <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
           <p>支払い方法 <b>{paymentLabel(event.paymentMethod)}</b></p>
         </div>
-        <div className="url-card">
-          <p>支払い情報</p><p>{event.paymentInfo || '-'} </p>
-          {event.memo && <p className="sub">任意メモ: {event.memo}</p>}
+        <div className="settings-info-card">
+          <div className="settings-info-card__head">イベント情報</div>
+          <div className="url-card">
+            <p>支払い情報</p><p>{event.paymentInfo || '-'} </p>
+            <p>任意メモ: {event.memo || '-'}</p>
+          </div>
         </div>
-        <div className="url-card">
+        <div className="settings-info-card">
+          <div className="settings-info-card__head">参加者用URL</div>
+          <div className="url-card">
           <p>参加者用URL（共有用）</p>
           <a href={joinUrl}>{joinUrl}</a>
         </div>
-        <div className="url-card caution">
+          <p className="sub">LINEグループなどに共有するためのURLです。</p>
+        </div>
+        <div className="settings-info-card">
+          <div className="settings-info-card__head">幹事用URLの注意</div>
+          <div className="url-card caution">
           <p>幹事用URLは他人に共有しないでください</p>
           <a href={adminUrl}>{adminUrl}</a>
+        </div>
+        </div>
+        <div className="settings-info-card">
+          <div className="settings-info-card__head">ステータス説明</div>
+          <div className="url-card">
+            <p><b>未払い</b>：まだ支払いがされていません</p>
+            <p><b>報告済み</b>：支払い報告済み、幹事の確認待ち</p>
+            <p><b>確認済み</b>：幹事が支払いを確認済み</p>
+          </div>
         </div>
       </section>
       )}
