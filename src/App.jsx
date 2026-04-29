@@ -177,6 +177,7 @@ function AdminPage({ eventId, token }) {
   const [error, setError] = useState('')
   const [workingId, setWorkingId] = useState('')
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
+  const [memberStatusFilter, setMemberStatusFilter] = useState('all')
 
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
@@ -207,11 +208,13 @@ function AdminPage({ eventId, token }) {
     }
   }, [eventId, token])
 
+  const safeMembers = useMemo(() => (Array.isArray(members) ? members : []), [members])
+
   const counts = useMemo(() => {
-    const unpaidMembers = members.filter((m) => m.status === 'unpaid')
-    const reportedMembers = members.filter((m) => m.status === 'reported')
-    const confirmedMembers = members.filter((m) => m.status === 'confirmed')
-    const rate = members.length ? Math.round((confirmedMembers.length / members.length) * 100) : 0
+    const unpaidMembers = safeMembers.filter((m) => m.status === 'unpaid')
+    const reportedMembers = safeMembers.filter((m) => m.status === 'reported')
+    const confirmedMembers = safeMembers.filter((m) => m.status === 'confirmed')
+    const rate = safeMembers.length ? Math.round((confirmedMembers.length / safeMembers.length) * 100) : 0
     return {
       unpaid: unpaidMembers.length,
       reported: reportedMembers.length,
@@ -221,7 +224,12 @@ function AdminPage({ eventId, token }) {
       reportedMembers,
       confirmedMembers,
     }
-  }, [members])
+  }, [safeMembers])
+
+  const filteredMembers = useMemo(() => {
+    if (memberStatusFilter === 'all') return safeMembers
+    return safeMembers.filter((member) => member.status === memberStatusFilter)
+  }, [memberStatusFilter, safeMembers])
 
   if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
   if (!event) return <main className="container"><section className="card"><p>読み込み中...</p></section></main>
@@ -274,7 +282,7 @@ function AdminPage({ eventId, token }) {
 
 
 
-  const AdminBottomNav = () => (
+  const renderAdminBottomNav = () => (
     <nav className="admin-bottom-nav" aria-label="幹事メニュー">
       <button className={`admin-bottom-nav__item ${activeAdminTab === 'dashboard' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('dashboard')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
@@ -334,7 +342,7 @@ function AdminPage({ eventId, token }) {
           <section className="card admin-card">
             <h2>ステータスサマリー</h2>
             <div className="admin-summary-grid">
-              <div className="admin-summary-card summary-neutral"><span>参加者数</span><b>{members.length}</b></div>
+              <div className="admin-summary-card summary-neutral"><span>参加者数</span><b>{safeMembers.length}</b></div>
               <div className="admin-summary-card summary-unpaid"><span>未払い</span><b>{counts.unpaid}</b></div>
               <div className="admin-summary-card summary-reported"><span>報告済み</span><b>{counts.reported}</b></div>
               <div className="admin-summary-card summary-confirmed"><span>確認済み</span><b>{counts.confirmed}</b></div>
@@ -380,27 +388,40 @@ function AdminPage({ eventId, token }) {
       <section className="card participants-card admin-card">
         <h2>参加者一覧</h2>
 
-        <div className="status-pill-row">
-          <span className="status-pill pill-unpaid">未払い（{counts.unpaid}）</span>
-          <span className="status-pill pill-reported">報告済み（{counts.reported}）</span>
-          <span className="status-pill pill-confirmed">確認済み（{counts.confirmed}）</span>
+        <div className="status-pill-row" role="tablist" aria-label="参加者ステータスフィルター">
+          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて（{safeMembers.length}）</button>
+          <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い（{counts.unpaid}）</button>
+          <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>報告済み（{counts.reported}）</button>
+          <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み（{counts.confirmed}）</button>
         </div>
 
-        <div className="list-section">
-          <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
-          <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
-          {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
-        </div>
+        {memberStatusFilter === 'all' ? (
+          <>
+            <div className="list-section">
+              <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
+              <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
+              {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
+            </div>
 
-        <div className="list-section">
-          <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
-          <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
-        </div>
+            <div className="list-section">
+              <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
+              <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
+              {counts.reported === 0 && <p className="sub">報告済み / 確認待ちの参加者はいません。</p>}
+            </div>
 
-        <div className="list-section">
-          <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
-          <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
-        </div>
+            <div className="list-section">
+              <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
+              <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
+              {counts.confirmed === 0 && <p className="sub">確認済みの参加者はいません。</p>}
+            </div>
+          </>
+        ) : (
+          <div className="list-section">
+            <h3>表示中: {statusLabel(memberStatusFilter)}</h3>
+            <ul className="list">{filteredMembers.map(memberCard)}</ul>
+            {filteredMembers.length === 0 && <p className="sub">該当する参加者はいません。</p>}
+          </div>
+        )}
       </section>
       )}
 
@@ -446,7 +467,7 @@ function AdminPage({ eventId, token }) {
       </section>
       )}
 
-      <AdminBottomNav />
+      {renderAdminBottomNav()}
     </main>
   )
 }
