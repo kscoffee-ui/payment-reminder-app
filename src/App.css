@@ -492,7 +492,8 @@ textarea {
 .admin-progress-bar { width:100%; height:12px; border-radius:999px; background:#e2e8f0; overflow:hidden; }
 .admin-progress-fill { height:100%; background:#2563eb; border-radius:999px; }
 .status-pill-row { display:flex; gap:8px; flex-wrap:wrap; }
-.status-pill { border-radius:999px; padding:5px 10px; font-size:.78rem; font-weight:700; border:1px solid transparent; }
+.status-pill { border-radius:999px; padding:5px 10px; font-size:.78rem; font-weight:700; border:1px solid transparent; background:#f8fafc; cursor:pointer; }
+.pill-all { background:#f8fafc; border-color:#cbd5e1; color:#334155; }
 .pill-unpaid { background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
 .pill-reported { background:#fff7ed; border-color:#fdba74; color:#9a3412; }
 .pill-confirmed { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
@@ -506,3 +507,5 @@ textarea {
 .btn-confirm { background:#f97316; }
 
 .admin-bottom-nav__item--active { color:#2563eb; }
+
+.status-pill.pill-active { box-shadow: inset 0 0 0 1px currentColor; }

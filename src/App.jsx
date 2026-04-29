@@ -177,6 +177,7 @@ function AdminPage({ eventId, token }) {
   const [error, setError] = useState('')
   const [workingId, setWorkingId] = useState('')
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
+  const [memberStatusFilter, setMemberStatusFilter] = useState('all')
 
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
@@ -265,6 +266,11 @@ function AdminPage({ eventId, token }) {
       setWorkingId('')
     }
   }
+
+  const filteredMembers = useMemo(() => {
+    if (memberStatusFilter === 'all') return members
+    return members.filter((member) => member.status === memberStatusFilter)
+  }, [memberStatusFilter, members])
 
   const unpaidHeadline = counts.unpaid === 0
     ? '全員確認済みです'
@@ -380,27 +386,40 @@ function AdminPage({ eventId, token }) {
       <section className="card participants-card admin-card">
         <h2>参加者一覧</h2>
 
-        <div className="status-pill-row">
-          <span className="status-pill pill-unpaid">未払い（{counts.unpaid}）</span>
-          <span className="status-pill pill-reported">報告済み（{counts.reported}）</span>
-          <span className="status-pill pill-confirmed">確認済み（{counts.confirmed}）</span>
+        <div className="status-pill-row" role="tablist" aria-label="参加者ステータスフィルター">
+          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて（{members.length}）</button>
+          <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い（{counts.unpaid}）</button>
+          <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>報告済み（{counts.reported}）</button>
+          <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み（{counts.confirmed}）</button>
         </div>
 
-        <div className="list-section">
-          <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
-          <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
-          {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
-        </div>
+        {memberStatusFilter === 'all' ? (
+          <>
+            <div className="list-section">
+              <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
+              <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
+              {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
+            </div>
 
-        <div className="list-section">
-          <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
-          <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
-        </div>
+            <div className="list-section">
+              <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
+              <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
+              {counts.reported === 0 && <p className="sub">報告済み / 確認待ちの参加者はいません。</p>}
+            </div>
 
-        <div className="list-section">
-          <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
-          <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
-        </div>
+            <div className="list-section">
+              <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
+              <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
+              {counts.confirmed === 0 && <p className="sub">確認済みの参加者はいません。</p>}
+            </div>
+          </>
+        ) : (
+          <div className="list-section">
+            <h3>表示中: {statusLabel(memberStatusFilter)}</h3>
+            <ul className="list">{filteredMembers.map(memberCard)}</ul>
+            {filteredMembers.length === 0 && <p className="sub">該当する参加者はいません。</p>}
+          </div>
+        )}
       </section>
       )}
 
