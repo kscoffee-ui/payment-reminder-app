@@ -29,6 +29,8 @@ function move(path) {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
+const DEFAULT_CASH_PAYMENT_INFO = '幹事に現金で直接渡してください'
+
 function paymentLabel(method) {
   return { paypay: 'PayPay', cash: '現金', bank: '銀行振込', other: 'その他' }[method] || method
 }
@@ -74,7 +76,7 @@ function EventCreatePage() {
     title: '',
     eventDate: '',
     amountPerPerson: '',
-    paymentMethod: 'paypay',
+    paymentMethod: 'cash',
     paymentInfo: '',
     memo: '',
   })
@@ -88,16 +90,14 @@ function EventCreatePage() {
     if (!form.title.trim()) return setError('イベント名を入力してください。')
     if (!form.eventDate) return setError('日付を入力してください。')
     if (Number(form.amountPerPerson) < 1) return setError('1人あたりの金額は1円以上で入力してください。')
-    if (!form.paymentInfo.trim()) return setError('支払い情報を入力してください。')
-
     setLoading(true)
     try {
       const created = await createEvent({
         title: form.title.trim(),
         eventDate: form.eventDate,
         amountPerPerson: Number(form.amountPerPerson),
-        paymentMethod: form.paymentMethod,
-        paymentInfo: form.paymentInfo.trim(),
+        paymentMethod: 'cash',
+        paymentInfo: form.paymentInfo.trim() || DEFAULT_CASH_PAYMENT_INFO,
         memo: form.memo.trim(),
       })
       const adminToken = encodeURIComponent(created.adminToken)
@@ -133,19 +133,16 @@ function EventCreatePage() {
           <input type="number" min="1" placeholder="2500" value={form.amountPerPerson} onChange={(e) => setForm({ ...form, amountPerPerson: e.target.value })} />
         </label>
 
-        <label className="field">
+        <div className="field fixed-field">
           <span>支払い方法</span>
-          <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}>
-            <option value="paypay">PayPay</option>
-            <option value="cash">現金</option>
-            <option value="bank">銀行振込</option>
-            <option value="other">その他</option>
-          </select>
-        </label>
+          <p className="fixed-field-value">現金回収</p>
+          <p className="sub">参加者には、幹事へ現金で直接支払ったあとに報告してもらいます。</p>
+        </div>
 
         <label className="field">
-          <span>支払い情報</span>
-          <textarea rows="3" placeholder="PayPay ID / 振込先 / 受け渡し場所など" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
+          <span>幹事からの案内</span>
+          <p className="sub">例：当日受付で集めます / 飲み会の開始前に幹事へ渡してください</p>
+          <textarea rows="3" placeholder="例：当日受付で集めます" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
         </label>
 
         <label className="field">
@@ -342,7 +339,7 @@ function AdminPage({ eventId, token }) {
       title: event.title || '',
       eventDate: event.eventDate || '',
       amountPerPerson: String(event.amountPerPerson || ''),
-      paymentMethod: event.paymentMethod || 'paypay',
+      paymentMethod: 'cash',
       paymentInfo: event.paymentInfo || '',
       memo: event.memo || '',
     })
@@ -364,8 +361,6 @@ function AdminPage({ eventId, token }) {
     if (!settingsForm.title.trim()) return setSettingsError('イベント名を入力してください。')
     if (!settingsForm.eventDate) return setSettingsError('日付を入力してください。')
     if (!/^\d+$/.test(String(settingsForm.amountPerPerson)) || Number(settingsForm.amountPerPerson) < 1) return setSettingsError('1人あたりの金額は1円以上の整数で入力してください。')
-    if (!settingsForm.paymentMethod) return setSettingsError('支払い方法を選択してください。')
-    if (!settingsForm.paymentInfo.trim()) return setSettingsError('支払い情報を入力してください。')
     if (!window.confirm('イベント情報を変更すると、参加者側に表示される金額や支払い情報も変更されます。保存しますか？')) return
 
     setSettingsSaving(true)
@@ -374,8 +369,8 @@ function AdminPage({ eventId, token }) {
         title: settingsForm.title.trim(),
         eventDate: settingsForm.eventDate,
         amountPerPerson: Number(settingsForm.amountPerPerson),
-        paymentMethod: settingsForm.paymentMethod,
-        paymentInfo: settingsForm.paymentInfo.trim(),
+        paymentMethod: 'cash',
+        paymentInfo: settingsForm.paymentInfo.trim() || DEFAULT_CASH_PAYMENT_INFO,
         memo: settingsForm.memo.trim(),
       })
       setSettingsSuccess('イベント情報を更新しました。')
@@ -542,12 +537,12 @@ function AdminPage({ eventId, token }) {
               <p>イベント名 <b>{event.title}</b></p>
               <p>日付 <b>{formatDate(event.eventDate)}</b></p>
               <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
-              <p>支払い方法 <b>{paymentLabel(event.paymentMethod)}</b></p>
+              <p>支払い方法 <b>現金回収</b></p>
             </div>
             <div className="settings-info-card">
               <div className="settings-info-card__head">イベント情報</div>
               <div className="url-card">
-                <p>支払い情報</p><p>{event.paymentInfo || '-'} </p>
+                <p>幹事からの案内</p><p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO} </p>
                 <p>任意メモ: {event.memo || '-'}</p>
               </div>
             </div>
@@ -567,18 +562,14 @@ function AdminPage({ eventId, token }) {
               <span>1人あたりの金額</span>
               <input type="number" min="1" step="1" value={settingsForm.amountPerPerson} onChange={(e) => setSettingsForm({ ...settingsForm, amountPerPerson: e.target.value })} />
             </label>
-            <label className="field">
+            <div className="field fixed-field">
               <span>支払い方法</span>
-              <select value={settingsForm.paymentMethod} onChange={(e) => setSettingsForm({ ...settingsForm, paymentMethod: e.target.value })}>
-                <option value="paypay">PayPay</option>
-                <option value="cash">現金</option>
-                <option value="bank">銀行振込</option>
-                <option value="other">その他</option>
-              </select>
-            </label>
+              <p className="fixed-field-value">現金回収</p>
+            </div>
             <label className="field">
-              <span>支払い情報</span>
-              <textarea rows="3" value={settingsForm.paymentInfo} onChange={(e) => setSettingsForm({ ...settingsForm, paymentInfo: e.target.value })} />
+              <span>幹事からの案内</span>
+              <p className="sub">例：当日受付で集めます / 飲み会の開始前に幹事へ渡してください</p>
+              <textarea rows="3" placeholder="例：当日受付で集めます" value={settingsForm.paymentInfo} onChange={(e) => setSettingsForm({ ...settingsForm, paymentInfo: e.target.value })} />
             </label>
             <label className="field">
               <span>任意メモ</span>
