@@ -10,6 +10,7 @@ import {
   subscribeEvent,
   subscribeMember,
   subscribeMembers,
+  updateEventInfo,
 } from './lib/firestore'
 import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getMemberBinding, setMemberBinding } from './lib/storage'
@@ -178,6 +179,18 @@ function AdminPage({ eventId, token }) {
   const [workingId, setWorkingId] = useState('')
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
+  const [settingsEditing, setSettingsEditing] = useState(false)
+  const [settingsForm, setSettingsForm] = useState({
+    title: '',
+    eventDate: '',
+    amountPerPerson: '',
+    paymentMethod: 'paypay',
+    paymentInfo: '',
+    memo: '',
+  })
+  const [settingsError, setSettingsError] = useState('')
+  const [settingsSuccess, setSettingsSuccess] = useState('')
+  const [settingsSaving, setSettingsSaving] = useState(false)
 
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
@@ -282,6 +295,58 @@ function AdminPage({ eventId, token }) {
     : counts.unpaid === 1
       ? 'ラスト1人が未払いです'
       : `あと ${counts.unpaid} 人が未払いです`
+
+  const startSettingsEdit = () => {
+    setSettingsError('')
+    setSettingsSuccess('')
+    setSettingsForm({
+      title: event.title || '',
+      eventDate: event.eventDate || '',
+      amountPerPerson: String(event.amountPerPerson || ''),
+      paymentMethod: event.paymentMethod || 'paypay',
+      paymentInfo: event.paymentInfo || '',
+      memo: event.memo || '',
+    })
+    setSettingsEditing(true)
+  }
+
+  const cancelSettingsEdit = () => {
+    if (settingsSaving) return
+    setSettingsError('')
+    setSettingsEditing(false)
+  }
+
+  const saveSettings = async (e) => {
+    e.preventDefault()
+    if (settingsSaving) return
+    setSettingsError('')
+    setSettingsSuccess('')
+
+    if (!settingsForm.title.trim()) return setSettingsError('イベント名を入力してください。')
+    if (!settingsForm.eventDate) return setSettingsError('日付を入力してください。')
+    if (!/^\d+$/.test(String(settingsForm.amountPerPerson)) || Number(settingsForm.amountPerPerson) < 1) return setSettingsError('1人あたりの金額は1円以上の整数で入力してください。')
+    if (!settingsForm.paymentMethod) return setSettingsError('支払い方法を選択してください。')
+    if (!settingsForm.paymentInfo.trim()) return setSettingsError('支払い情報を入力してください。')
+    if (!window.confirm('イベント情報を変更すると、参加者側に表示される金額や支払い情報も変更されます。保存しますか？')) return
+
+    setSettingsSaving(true)
+    try {
+      await updateEventInfo(eventId, {
+        title: settingsForm.title.trim(),
+        eventDate: settingsForm.eventDate,
+        amountPerPerson: Number(settingsForm.amountPerPerson),
+        paymentMethod: settingsForm.paymentMethod,
+        paymentInfo: settingsForm.paymentInfo.trim(),
+        memo: settingsForm.memo.trim(),
+      })
+      setSettingsSuccess('イベント情報を更新しました。')
+      setSettingsEditing(false)
+    } catch (err) {
+      setSettingsError(err.message)
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
 
 
 
@@ -431,25 +496,68 @@ function AdminPage({ eventId, token }) {
       {activeAdminTab === 'settings' && (
       <section className="card admin-card">
         <h2>設定 / イベント情報</h2>
-        <div className="event-meta-grid">
-          <p>イベント名 <b>{event.title}</b></p>
-          <p>日付 <b>{formatDate(event.eventDate)}</b></p>
-          <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
-          <p>支払い方法 <b>{paymentLabel(event.paymentMethod)}</b></p>
-        </div>
-        <div className="settings-info-card">
-          <div className="settings-info-card__head">イベント情報</div>
-          <div className="url-card">
-            <p>支払い情報</p><p>{event.paymentInfo || '-'} </p>
-            <p>任意メモ: {event.memo || '-'}</p>
-          </div>
-        </div>
+        {settingsSuccess && <p className="success">{settingsSuccess}</p>}
+        {!settingsEditing ? (
+          <>
+            <div className="event-meta-grid">
+              <p>イベント名 <b>{event.title}</b></p>
+              <p>日付 <b>{formatDate(event.eventDate)}</b></p>
+              <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
+              <p>支払い方法 <b>{paymentLabel(event.paymentMethod)}</b></p>
+            </div>
+            <div className="settings-info-card">
+              <div className="settings-info-card__head">イベント情報</div>
+              <div className="url-card">
+                <p>支払い情報</p><p>{event.paymentInfo || '-'} </p>
+                <p>任意メモ: {event.memo || '-'}</p>
+              </div>
+            </div>
+            <button className="btn btn-save btn-lg" onClick={startSettingsEdit}>イベント情報を編集</button>
+          </>
+        ) : (
+          <form className="settings-edit-form" onSubmit={saveSettings}>
+            <label className="field">
+              <span>イベント名</span>
+              <input value={settingsForm.title} onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>日付</span>
+              <input type="date" value={settingsForm.eventDate} onChange={(e) => setSettingsForm({ ...settingsForm, eventDate: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>1人あたりの金額</span>
+              <input type="number" min="1" step="1" value={settingsForm.amountPerPerson} onChange={(e) => setSettingsForm({ ...settingsForm, amountPerPerson: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>支払い方法</span>
+              <select value={settingsForm.paymentMethod} onChange={(e) => setSettingsForm({ ...settingsForm, paymentMethod: e.target.value })}>
+                <option value="paypay">PayPay</option>
+                <option value="cash">現金</option>
+                <option value="bank">銀行振込</option>
+                <option value="other">その他</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>支払い情報</span>
+              <textarea rows="3" value={settingsForm.paymentInfo} onChange={(e) => setSettingsForm({ ...settingsForm, paymentInfo: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>任意メモ</span>
+              <textarea rows="2" value={settingsForm.memo} onChange={(e) => setSettingsForm({ ...settingsForm, memo: e.target.value })} />
+            </label>
+            {settingsError && <p className="error">{settingsError}</p>}
+            <div className="settings-edit-actions">
+              <button className="btn btn-save btn-lg" disabled={settingsSaving}>{settingsSaving ? '保存中...' : '保存する'}</button>
+              <button type="button" className="btn btn-secondary btn-lg" onClick={cancelSettingsEdit} disabled={settingsSaving}>キャンセル</button>
+            </div>
+          </form>
+        )}
         <div className="settings-info-card">
           <div className="settings-info-card__head">参加者用URL</div>
           <div className="url-card">
-          <p>参加者用URL（共有用）</p>
-          <a href={joinUrl}>{joinUrl}</a>
-        </div>
+            <p>参加者用URL（共有用）</p>
+            <a href={joinUrl}>{joinUrl}</a>
+          </div>
           <p className="sub">LINEグループなどに共有するためのURLです。</p>
         </div>
         <div className="settings-info-card">

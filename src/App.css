@@ -119,6 +119,10 @@ textarea {
   background: #0f172a;
 }
 
+.btn-save {
+  background: #2563eb;
+}
+
 .btn-secondary {
   background: #e5e7eb;
   color: #334155;
@@ -155,6 +159,21 @@ textarea {
 .error {
   color: #dc2626;
   font-size: 0.84rem;
+}
+
+.success {
+  color: #15803d;
+  font-size: 0.84rem;
+}
+
+.settings-edit-form {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-edit-actions {
+  display: grid;
+  gap: 8px;
 }
 
 .create-page-card {
