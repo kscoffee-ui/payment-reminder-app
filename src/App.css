@@ -528,3 +528,17 @@ textarea {
 .admin-bottom-nav__item--active { color:#2563eb; }
 
 .status-pill.pill-active { box-shadow: inset 0 0 0 1px currentColor; }
+
+.participant-share-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.share-actions {
+  display: grid;
+  gap: 8px;
+}

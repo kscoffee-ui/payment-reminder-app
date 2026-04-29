@@ -50,6 +50,25 @@ function formatMoney(value) {
   return `¥${Number(value || 0).toLocaleString('ja-JP')}`
 }
 
+
+function buildJoinShareMessage(event, joinUrl) {
+  const eventTitle = event?.title?.trim() || 'イベント'
+  return `「${eventTitle}」の支払い確認です。
+以下のURLから参加して、支払い後に報告してください。
+
+${joinUrl || ''}`
+}
+
+function canUseNativeShare() {
+  return typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+}
+
+function openLineShare(message) {
+  if (typeof window === 'undefined') return
+  const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`
+  window.open(lineShareUrl, '_blank', 'noopener,noreferrer')
+}
+
 function isValidHttpUrl(value) {
   try {
     const parsed = new URL(value)
@@ -150,15 +169,44 @@ function EventCreatePage() {
   )
 }
 
-function CreatedScreen({ adminUrl, joinUrl, onContinue }) {
+function CreatedScreen({ event, adminUrl, joinUrl, onContinue }) {
+  const shareMessage = buildJoinShareMessage(event, joinUrl)
+  const nativeShareAvailable = canUseNativeShare()
+  const canShareJoinUrl = Boolean(joinUrl)
+
+  const handleNativeShare = async () => {
+    if (!canShareJoinUrl || !nativeShareAvailable) return
+    try {
+      // OS標準の共有メニューで参加者URLを共有
+      await navigator.share({
+        title: event?.title || '未払い回収ツール',
+        text: shareMessage,
+        url: joinUrl,
+      })
+    } catch (err) {
+      if (err?.name === 'AbortError') return
+      console.warn('Native share failed:', err)
+    }
+  }
+
   return (
     <section className="card complete-card">
       <h2>イベントを作成しました</h2>
       <p className="sub">次に、参加者用URLを共有してください。幹事用URLはあなた専用です。</p>
 
-      <div className="url-card">
-        <p>参加者用URL（共有用）</p>
-        <a href={joinUrl}>{joinUrl}</a>
+      <div className="participant-share-card">
+        <h3>参加者に共有するURL</h3>
+        <p className="sub">このURLをLINEグループなどに送ると、参加者が自分で名前を入力して参加できます</p>
+        <div className="url-card">
+          <p>参加者用URL（共有用）</p>
+          <a href={joinUrl}>{joinUrl}</a>
+        </div>
+        <div className="share-actions">
+          <button className="btn btn-line" disabled={!canShareJoinUrl} onClick={() => openLineShare(shareMessage)}>LINEで共有</button>
+          {nativeShareAvailable && (
+            <button className="btn btn-secondary" disabled={!canShareJoinUrl} onClick={handleNativeShare}>その他のアプリで共有</button>
+          )}
+        </div>
       </div>
 
       <div className="url-card caution">
@@ -166,11 +214,11 @@ function CreatedScreen({ adminUrl, joinUrl, onContinue }) {
         <a href={adminUrl}>{adminUrl}</a>
       </div>
 
-      <a className="btn btn-line" href={createLineShareUrl(`参加登録はこちら\n${joinUrl}`)} target="_blank" rel="noreferrer">参加者URLをLINEで共有</a>
       <button className="btn btn-primary btn-lg" onClick={onContinue}>管理画面へ進む</button>
     </section>
   )
 }
+
 
 function AdminPage({ eventId, token }) {
   const [event, setEvent] = useState(null)
@@ -261,7 +309,7 @@ function AdminPage({ eventId, token }) {
   if (created) {
     return (
       <main className="container">
-        <CreatedScreen adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />
+        <CreatedScreen event={event} adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />
       </main>
     )
   }
@@ -552,13 +600,37 @@ function AdminPage({ eventId, token }) {
             </div>
           </form>
         )}
-        <div className="settings-info-card">
+        <div className="settings-info-card participant-share-card">
           <div className="settings-info-card__head">参加者用URL</div>
+          <p className="sub">このURLをLINEグループなどに送ると、参加者が自分で名前を入力して参加できます</p>
           <div className="url-card">
             <p>参加者用URL（共有用）</p>
             <a href={joinUrl}>{joinUrl}</a>
           </div>
-          <p className="sub">LINEグループなどに共有するためのURLです。</p>
+          <div className="share-actions">
+            <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
+            {canUseNativeShare() && (
+              <button
+                className="btn btn-secondary"
+                disabled={!joinUrl}
+                onClick={async () => {
+                  try {
+                    // OS標準の共有メニューで参加者URLを再共有
+                    await navigator.share({
+                      title: event?.title || '未払い回収ツール',
+                      text: buildJoinShareMessage(event, joinUrl),
+                      url: joinUrl,
+                    })
+                  } catch (err) {
+                    if (err?.name === 'AbortError') return
+                    console.warn('Native share failed:', err)
+                  }
+                }}
+              >
+                その他のアプリで共有
+              </button>
+            )}
+          </div>
         </div>
         <div className="settings-info-card">
           <div className="settings-info-card__head">幹事用URLの注意</div>
