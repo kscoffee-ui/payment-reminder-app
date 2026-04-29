@@ -23,6 +23,10 @@ body {
   gap: 14px;
 }
 
+.admin-shell {
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+
 .card {
   background: #fff;
   border-radius: 20px;
@@ -431,4 +435,47 @@ textarea {
   font-size: 2.4rem;
   font-weight: 800;
   line-height: 1;
+}
+
+.admin-bottom-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 100%;
+  max-width: 430px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+
+.admin-bottom-nav__item {
+  min-height: 56px;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.admin-bottom-nav__item--active {
+  color: #0f172a;
+}
+
+.admin-bottom-nav__icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+}
+
+.admin-bottom-nav__icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
 }

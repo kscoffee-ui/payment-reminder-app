@@ -100,7 +100,7 @@ function EventCreatePage() {
   }
 
   return (
-    <main className="container">
+    <main className="container admin-shell">
       <form className="card form-card create-page-card" onSubmit={onSubmit}>
         <div className="section-title">
           <h1>未払い回収イベントを作成</h1>
@@ -176,6 +176,7 @@ function AdminPage({ eventId, token }) {
   const [members, setMembers] = useState([])
   const [error, setError] = useState('')
   const [workingId, setWorkingId] = useState('')
+  const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
 
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
@@ -263,6 +264,31 @@ function AdminPage({ eventId, token }) {
       ? 'ラスト1人が未払いです'
       : `あと ${counts.unpaid} 人が未払いです`
 
+
+
+  const AdminBottomNav = () => (
+    <nav className="admin-bottom-nav" aria-label="幹事メニュー">
+      <button className={`admin-bottom-nav__item ${activeAdminTab === 'dashboard' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('dashboard')}>
+        <span className="admin-bottom-nav__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
+        </span>
+        <span>ダッシュボード</span>
+      </button>
+      <button className={`admin-bottom-nav__item ${activeAdminTab === 'members' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('members')}>
+        <span className="admin-bottom-nav__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7.5 12a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 7.5 12Zm9 0A3.5 3.5 0 1 0 13 8.5a3.5 3.5 0 0 0 3.5 3.5ZM2 20a5.5 5.5 0 0 1 11 0v1H2Zm9 1v-1a5.5 5.5 0 0 1 11 0v1Z"/></svg>
+        </span>
+        <span>参加者一覧</span>
+      </button>
+      <button className={`admin-bottom-nav__item ${activeAdminTab === 'settings' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('settings')}>
+        <span className="admin-bottom-nav__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 8.7A3.3 3.3 0 1 0 15.3 12 3.3 3.3 0 0 0 12 8.7Zm9.7 4.1-1.9-.8a8.4 8.4 0 0 0-.5-1.3l1.1-1.7a1 1 0 0 0-.1-1.3l-1.5-1.5a1 1 0 0 0-1.3-.1l-1.7 1.1a8.4 8.4 0 0 0-1.3-.5l-.8-1.9a1 1 0 0 0-1-.6h-2.2a1 1 0 0 0-1 .6l-.8 1.9a8.4 8.4 0 0 0-1.3.5L6.8 5.9a1 1 0 0 0-1.3.1L4 7.5a1 1 0 0 0-.1 1.3L5 10.5a8.4 8.4 0 0 0-.5 1.3l-1.9.8a1 1 0 0 0-.6 1v2.2a1 1 0 0 0 .6 1l1.9.8a8.4 8.4 0 0 0 .5 1.3l-1.1 1.7A1 1 0 0 0 4 22l1.5 1.5a1 1 0 0 0 1.3.1l1.7-1.1a8.4 8.4 0 0 0 1.3.5l.8 1.9a1 1 0 0 0 1 .6h2.2a1 1 0 0 0 1-.6l.8-1.9a8.4 8.4 0 0 0 1.3-.5l1.7 1.1a1 1 0 0 0 1.3-.1L22 22a1 1 0 0 0 .1-1.3L21 19.1a8.4 8.4 0 0 0 .5-1.3l1.9-.8a1 1 0 0 0 .6-1v-2.2a1 1 0 0 0-.6-1Z"/></svg>
+        </span>
+        <span>設定</span>
+      </button>
+    </nav>
+  )
+
   const memberCard = (member) => (
     <li key={member.id} className={`member-item status-${member.status}`}>
       <div className="member-head">
@@ -285,9 +311,11 @@ function AdminPage({ eventId, token }) {
   )
 
   return (
-    <main className="container">
+    <main className="container admin-shell">
       {created && <CreatedScreen adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />}
 
+      {activeAdminTab === 'dashboard' && (
+        <>
       <section className="card dashboard-top">
         <div className="top-bar">
           <h1>{event.title}</h1>
@@ -325,27 +353,6 @@ function AdminPage({ eventId, token }) {
           <p className="meta-confirmed">確認済み <b>{counts.confirmed}人</b></p>
         </div>
       </section>
-
-      <section className="card participants-card">
-        <h2>参加者一覧</h2>
-
-        <div className="list-section">
-          <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
-          <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
-          {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
-        </div>
-
-        <div className="list-section">
-          <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
-          <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
-        </div>
-
-        <div className="list-section">
-          <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
-          <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
-        </div>
-      </section>
-
       <section className="card reminder-card">
         <h2>LINEで催促</h2>
         <p className="unpaid-highlight">未払い {counts.unpaid} 人</p>
@@ -373,6 +380,56 @@ function AdminPage({ eventId, token }) {
           LINEで催促する
         </button>
       </section>
+        </>
+      )}
+
+      {activeAdminTab === 'members' && (
+      <section className="card participants-card">
+        <h2>参加者一覧</h2>
+
+        <div className="list-section">
+          <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
+          <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
+          {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
+        </div>
+
+        <div className="list-section">
+          <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
+          <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
+        </div>
+
+        <div className="list-section">
+          <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
+          <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
+        </div>
+      </section>
+      )}
+
+      {activeAdminTab === 'settings' && (
+      <section className="card">
+        <h2>設定 / イベント情報</h2>
+        <div className="event-meta-grid">
+          <p>イベント名 <b>{event.title}</b></p>
+          <p>日付 <b>{formatDate(event.eventDate)}</b></p>
+          <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
+          <p>支払い方法 <b>{paymentLabel(event.paymentMethod)}</b></p>
+        </div>
+        <div className="url-card">
+          <p>支払い情報</p><p>{event.paymentInfo || '-'} </p>
+          {event.memo && <p className="sub">任意メモ: {event.memo}</p>}
+        </div>
+        <div className="url-card">
+          <p>参加者用URL（共有用）</p>
+          <a href={joinUrl}>{joinUrl}</a>
+        </div>
+        <div className="url-card caution">
+          <p>幹事用URLは他人に共有しないでください</p>
+          <a href={adminUrl}>{adminUrl}</a>
+        </div>
+      </section>
+      )}
+
+      <AdminBottomNav />
     </main>
   )
 }
@@ -474,7 +531,7 @@ function JoinPage({ eventId, token }) {
 
   if (!member) {
     return (
-      <main className="container">
+      <main className="container admin-shell">
         <section className="card join-card">
           <h1>参加登録</h1>
           <div className="event-summary">
@@ -494,7 +551,7 @@ function JoinPage({ eventId, token }) {
 
   if (member.status === 'reported') {
     return (
-      <main className="container">
+      <main className="container admin-shell">
         <section className="card status-screen status-reported-bg">
           <h1>支払いを報告しました</h1>
           <p><span className="status-badge badge-reported">現在のステータス：確認待ち</span></p>
@@ -508,7 +565,7 @@ function JoinPage({ eventId, token }) {
 
   if (member.status === 'confirmed') {
     return (
-      <main className="container">
+      <main className="container admin-shell">
         <section className="card status-screen status-confirmed-bg">
           <h1>支払いが確認されました</h1>
           <p><span className="status-badge badge-confirmed">現在のステータス：確認済み</span></p>
@@ -521,7 +578,7 @@ function JoinPage({ eventId, token }) {
   }
 
   return (
-    <main className="container">
+    <main className="container admin-shell">
       <section className="card payment-card">
         <h1>{member.name} さんの支払い</h1>
         <p className="payment-amount">{formatMoney(event.amountPerPerson)}</p>
