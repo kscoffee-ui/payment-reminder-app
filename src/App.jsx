@@ -393,11 +393,33 @@ function AdminPage({ eventId, token }) {
           <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み（{counts.confirmed}）</button>
         </div>
 
-        <div className="list-section">
-          <h3>表示中: {memberStatusFilter === 'all' ? 'すべて' : statusLabel(memberStatusFilter)}</h3>
-          <ul className="list">{filteredMembers.map(memberCard)}</ul>
-          {filteredMembers.length === 0 && <p className="sub">該当する参加者はいません。</p>}
-        </div>
+        {memberStatusFilter === 'all' ? (
+          <>
+            <div className="list-section">
+              <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
+              <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
+              {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
+            </div>
+
+            <div className="list-section">
+              <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
+              <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
+              {counts.reported === 0 && <p className="sub">報告済み / 確認待ちの参加者はいません。</p>}
+            </div>
+
+            <div className="list-section">
+              <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
+              <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
+              {counts.confirmed === 0 && <p className="sub">確認済みの参加者はいません。</p>}
+            </div>
+          </>
+        ) : (
+          <div className="list-section">
+            <h3>表示中: {statusLabel(memberStatusFilter)}</h3>
+            <ul className="list">{filteredMembers.map(memberCard)}</ul>
+            {filteredMembers.length === 0 && <p className="sub">該当する参加者はいません。</p>}
+          </div>
+        )}
       </section>
       )}
 
