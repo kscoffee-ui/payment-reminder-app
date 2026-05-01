@@ -576,3 +576,27 @@ textarea {
   display: grid;
   gap: 8px;
 }
+.app-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 18px 16px 10px;
+}
+
+.app-logo {
+  display: block;
+  width: min(180px, 56vw);
+  height: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 360px) {
+  .app-header {
+    padding: 14px 12px 8px;
+  }
+
+  .app-logo {
+    width: min(160px, 54vw);
+  }
+}
