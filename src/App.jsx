@@ -121,6 +121,7 @@ function EventCreatePage() {
 
   return (
     <main className="container admin-shell">
+      <AppHeader />
       <form className="card form-card create-page-card" onSubmit={onSubmit}>
         <div className="section-title">
           <h1>未払い回収イベントを作成</h1>
@@ -440,6 +441,7 @@ function AdminPage({ eventId, token }) {
 
   return (
     <main className="container admin-shell">
+      <AppHeader />
       {activeAdminTab === 'dashboard' && (
         <>
           <section className="card admin-card">
@@ -763,6 +765,7 @@ function JoinPage({ eventId, token }) {
   if (!member) {
     return (
       <main className="container admin-shell">
+        <AppHeader />
         <section className="card join-card">
           <h1>参加登録</h1>
           <div className="event-summary">
@@ -783,6 +786,7 @@ function JoinPage({ eventId, token }) {
   if (member.status === 'reported') {
     return (
       <main className="container admin-shell">
+        <AppHeader />
         <section className="card status-screen status-reported-bg">
           <h1>支払いを報告しました</h1>
           <p><span className="status-badge badge-reported">現在のステータス：確認待ち</span></p>
@@ -797,6 +801,7 @@ function JoinPage({ eventId, token }) {
   if (member.status === 'confirmed') {
     return (
       <main className="container admin-shell">
+        <AppHeader />
         <section className="card status-screen status-confirmed-bg">
           <h1>支払いが確認されました</h1>
           <p><span className="status-badge badge-confirmed">現在のステータス：確認済み</span></p>
@@ -810,6 +815,7 @@ function JoinPage({ eventId, token }) {
 
   return (
     <main className="container admin-shell">
+      <AppHeader />
       <section className="card payment-card">
         <h1>{member.name} さんの支払い</h1>
         <div className="cash-payment-summary">
