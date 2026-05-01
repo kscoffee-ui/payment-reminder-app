@@ -14,6 +14,15 @@ import {
 } from './lib/firestore'
 import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getMemberBinding, setMemberBinding } from './lib/storage'
+import kaishuruLogo from './assets/kaishuru-logo.png'
+
+function AppHeader() {
+  return (
+    <header className="app-header">
+      <img src={kaishuruLogo} alt="カイシュル" className="app-logo" />
+    </header>
+  )
+}
 
 function parseRoute() {
   const [, root, eventId] = window.location.pathname.split('/')
@@ -290,18 +299,19 @@ function AdminPage({ eventId, token }) {
     })
   }, [counts.rate, counts.unpaidMembers, event, joinUrl])
 
-  if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
+  if (error) return <main className="container"><AppHeader /><section className="card"><p className="error">{error}</p></section></main>
 
   const goDashboard = () => move(`/admin/${eventId}?token=${encodeURIComponent(token)}`)
 
   if (created) {
     return (
       <main className="container">
+      <AppHeader />
         <CreatedScreen event={event} adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />
       </main>
     )
   }
-  if (!event) return <main className="container"><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
+  if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
   const confirm = async (memberId) => {
     setWorkingId(memberId)
@@ -656,6 +666,7 @@ class AdminErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <main className="container">
+        <AppHeader />
           <section className="card">
             <p className="error">管理画面の表示中にエラーが発生しました。画面を再読み込みしてください。</p>
             {import.meta.env.DEV && this.state.error && (
@@ -746,8 +757,8 @@ function JoinPage({ eventId, token }) {
     }
   }
 
-  if (error) return <main className="container"><section className="card"><p className="error">{error}</p></section></main>
-  if (!event) return <main className="container"><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
+  if (error) return <main className="container"><AppHeader /><section className="card"><p className="error">{error}</p></section></main>
+  if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
   if (!member) {
     return (
