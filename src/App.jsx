@@ -87,7 +87,6 @@ function EventCreatePage() {
     amountPerPerson: '',
     paymentMethod: 'cash',
     paymentInfo: '',
-    memo: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -107,7 +106,7 @@ function EventCreatePage() {
         amountPerPerson: Number(form.amountPerPerson),
         paymentMethod: 'cash',
         paymentInfo: form.paymentInfo.trim() || DEFAULT_CASH_PAYMENT_INFO,
-        memo: form.memo.trim(),
+        memo: '',
       })
       const adminToken = encodeURIComponent(created.adminToken)
       const participantToken = encodeURIComponent(created.participantToken)
@@ -152,11 +151,6 @@ function EventCreatePage() {
           <span>幹事からの案内</span>
           <p className="sub">例：当日受付で集めます / 飲み会の開始前に幹事へ渡してください</p>
           <textarea rows="3" placeholder="例：当日受付で集めます" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
-        </label>
-
-        <label className="field">
-          <span>任意メモ</span>
-          <textarea rows="2" placeholder="補足（集合場所や期限など）" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} />
         </label>
 
         {error && <p className="error">{error}</p>}
