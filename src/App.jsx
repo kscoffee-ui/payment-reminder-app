@@ -87,7 +87,6 @@ function EventCreatePage() {
     amountPerPerson: '',
     paymentMethod: 'cash',
     paymentInfo: '',
-    memo: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -107,7 +106,7 @@ function EventCreatePage() {
         amountPerPerson: Number(form.amountPerPerson),
         paymentMethod: 'cash',
         paymentInfo: form.paymentInfo.trim() || DEFAULT_CASH_PAYMENT_INFO,
-        memo: form.memo.trim(),
+        memo: '',
       })
       const adminToken = encodeURIComponent(created.adminToken)
       const participantToken = encodeURIComponent(created.participantToken)
@@ -155,11 +154,6 @@ function EventCreatePage() {
           <textarea rows="3" placeholder="例：当日受付で集めます" value={form.paymentInfo} onChange={(e) => setForm({ ...form, paymentInfo: e.target.value })} />
         </label>
 
-        <label className="field">
-          <span>任意メモ</span>
-          <textarea rows="2" placeholder="補足（集合場所や期限など）" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} />
-        </label>
-
         {error && <p className="error">{error}</p>}
         <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? '作成中...' : 'イベントを作成する'}</button>
       </form>
@@ -167,7 +161,7 @@ function EventCreatePage() {
   )
 }
 
-function CreatedScreen({ event, adminUrl, joinUrl, onContinue }) {
+function CreatedScreen({ event, joinUrl, onContinue }) {
   const shareMessage = buildJoinShareMessage(event, joinUrl)
   const nativeShareAvailable = canUseNativeShare()
   const canShareJoinUrl = Boolean(joinUrl)
@@ -190,15 +184,11 @@ function CreatedScreen({ event, adminUrl, joinUrl, onContinue }) {
   return (
     <section className="card complete-card">
       <h2>イベントを作成しました</h2>
-      <p className="sub">次に、参加者用URLを共有してください。幹事用URLはあなた専用です。</p>
+      <p className="sub complete-lead">まずは参加者URLをLINEグループに共有しましょう。参加者は自分で名前を入力して参加できます。</p>
 
       <div className="participant-share-card">
-        <h3>参加者に共有するURL</h3>
-        <p className="sub">このURLをLINEグループなどに送ると、参加者が自分で名前を入力して参加できます</p>
-        <div className="url-card">
-          <p>参加者用URL（共有用）</p>
-          <a href={joinUrl}>{joinUrl}</a>
-        </div>
+        <h3>参加者に共有する</h3>
+        <p className="sub">このイベントの参加URLをLINEグループなどに送れます。参加者はURLから自分で名前を入力して参加します。</p>
         <div className="share-actions">
           <button className="btn btn-line" disabled={!canShareJoinUrl} onClick={() => openLineShare(shareMessage)}>LINEで共有</button>
           {nativeShareAvailable && (
@@ -207,9 +197,10 @@ function CreatedScreen({ event, adminUrl, joinUrl, onContinue }) {
         </div>
       </div>
 
-      <div className="url-card caution">
-        <p>幹事用URL（他人に共有しない）</p>
-        <a href={adminUrl}>{adminUrl}</a>
+      <div className="url-card caution organizer-admin-card">
+        <h3>幹事用の管理ページ</h3>
+        <p className="sub">このページは幹事専用です。<br />他人に共有しないでください。</p>
+        <p className="sub">あとから管理する場合は、このページをブックマークしてください。</p>
       </div>
 
       <button className="btn btn-primary btn-lg" onClick={onContinue}>管理画面へ進む</button>
@@ -308,7 +299,7 @@ function AdminPage({ eventId, token }) {
     return (
       <main className="container">
       <AppHeader />
-        <CreatedScreen event={event} adminUrl={adminUrl} joinUrl={joinUrl} onContinue={goDashboard} />
+        <CreatedScreen event={event} joinUrl={joinUrl} onContinue={goDashboard} />
       </main>
     )
   }
