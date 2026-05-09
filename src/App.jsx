@@ -13,7 +13,7 @@ import {
   updateEventInfo,
 } from './lib/firestore'
 import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
-import { clearMemberBinding, getMemberBinding, setMemberBinding } from './lib/storage'
+import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
 function AppHeader() {
@@ -90,6 +90,7 @@ function EventCreatePage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [recentAdminEvents, setRecentAdminEvents] = useState(() => getAdminEvents())
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -108,6 +109,15 @@ function EventCreatePage() {
         paymentInfo: form.paymentInfo.trim() || DEFAULT_CASH_PAYMENT_INFO,
         memo: '',
       })
+      saveAdminEvent({
+        eventId: created.eventId,
+        adminToken: created.adminToken,
+        title: form.title.trim(),
+        eventDate: form.eventDate,
+        amountPerPerson: Number(form.amountPerPerson),
+        createdAt: new Date().toISOString(),
+      })
+      setRecentAdminEvents(getAdminEvents())
       const adminToken = encodeURIComponent(created.adminToken)
       const participantToken = encodeURIComponent(created.participantToken)
       move(`/admin/${created.eventId}?token=${adminToken}&created=1&ptoken=${participantToken}`)
@@ -121,6 +131,36 @@ function EventCreatePage() {
   return (
     <main className="container admin-shell">
       <AppHeader />
+      {recentAdminEvents.length > 0 && (
+        <section className="card recent-events-card">
+          <h2>最近作成したイベント</h2>
+          <div className="recent-events-list">
+            {recentAdminEvents.map((event) => (
+              <article key={event.eventId} className="recent-event-item">
+                <div>
+                  <p className="recent-event-title">{event.title || 'イベント名未設定'}</p>
+                  <p className="sub">{formatDate(event.eventDate)}</p>
+                  <p className="sub">1人あたり {formatMoney(event.amountPerPerson)}</p>
+                </div>
+                <div className="recent-event-actions">
+                  <button className="btn btn-secondary recent-event-open" onClick={() => move(`/admin/${event.eventId}?token=${encodeURIComponent(event.adminToken)}`)}>
+                    管理画面を開く
+                  </button>
+                  <button
+                    className="btn btn-ghost-danger recent-event-remove"
+                    onClick={() => {
+                      removeAdminEvent(event.eventId)
+                      setRecentAdminEvents(getAdminEvents())
+                    }}
+                  >
+                    履歴から削除
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
       <form className="card form-card create-page-card" onSubmit={onSubmit}>
         <div className="section-title">
           <h1>未払い回収イベントを作成</h1>
@@ -196,6 +236,7 @@ function CreatedScreen({ event, joinUrl, onContinue }) {
           )}
         </div>
       </div>
+      <p className="sub complete-storage-note">この端末に管理ページを保存しました。次回カイシュルを開くと、最近作成したイベントから管理画面に戻れます。</p>
 
       <p className="sub admin-page-caution">この管理ページは幹事専用です。他人に共有しないでください。</p>
 
