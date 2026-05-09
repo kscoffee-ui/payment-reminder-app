@@ -18,13 +18,13 @@ body {
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
-  padding: 22px 14px 40px;
+  padding: 18px 14px 40px;
   display: grid;
   gap: 14px;
 }
 
 .admin-shell {
-  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  padding-bottom: calc(130px + env(safe-area-inset-bottom));
 }
 
 .card {
@@ -630,13 +630,13 @@ textarea {
   margin-left: -14px;
   display: grid;
   justify-items: center;
-  gap: 14px;
-  padding: 14px 16px 0;
+  gap: 10px;
+  padding: 8px 16px 0;
 }
 
 .app-logo {
   display: block;
-  width: min(170px, 46vw);
+  width: min(130px, 36vw);
   height: auto;
   object-fit: contain;
 }
@@ -649,15 +649,19 @@ textarea {
 
 .admin-settings-screen {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .settings-page-title {
-  font-size: 2.1rem;
-  line-height: 1.25;
+  font-size: 1.75rem;
+  line-height: 1.2;
   font-weight: 800;
   letter-spacing: 0.01em;
   color: #0f172a;
+  margin-top: 0;
+}
+
+.settings-page-title + .sub {
   margin-top: 2px;
 }
 
@@ -678,40 +682,48 @@ textarea {
 .settings-summary-item {
   background: #f8fafc;
   border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  padding: 14px;
+  border-radius: 16px;
+  padding: 12px;
+  min-height: 92px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .settings-summary-label {
-  font-size: 1.05rem;
+  font-size: 0.88rem;
   color: #1e293b;
 }
 
+.settings-summary-item .sub {
+  font-size: 0.8rem;
+}
+
 .settings-summary-item b {
-  font-size: 2rem;
+  font-size: 1.45rem;
+  line-height: 1.15;
   color: #0f172a;
 }
 
 .settings-guide-card {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  padding: 16px;
 }
 
 .settings-guide-card h3,
 .participant-share-card h3 {
-  font-size: 1.95rem;
+  font-size: 1.05rem;
   font-weight: 800;
 }
 
 .settings-guide-card p {
-  font-size: 1.25rem;
-  line-height: 1.55;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .settings-edit-trigger {
-  min-height: 58px;
+  min-height: 46px;
+  padding: 8px 12px;
 }
 
 .btn-outline-primary {
@@ -722,23 +734,25 @@ textarea {
 
 .participant-share-card {
   display: grid;
-  gap: 14px;
+  gap: 10px;
+  padding: 16px;
 }
 
 .participant-share-card .sub {
-  font-size: 1rem;
-  line-height: 1.55;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 .share-actions {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .share-actions .btn {
-  min-height: 58px;
-  font-size: 1.06rem;
-  border-radius: 14px;
+  min-height: 46px;
+  font-size: 0.92rem;
+  border-radius: 12px;
+  padding: 8px 12px;
 }
 
 .share-actions .btn-secondary {
@@ -750,10 +764,10 @@ textarea {
   .app-header {
     width: calc(100% + 24px);
     margin-left: -12px;
-    padding: 10px 12px 0;
+    padding: 8px 12px 0;
   }
 
   .app-logo {
-    width: min(144px, 42vw);
+    width: min(118px, 34vw);
   }
 }
