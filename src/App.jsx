@@ -197,11 +197,7 @@ function CreatedScreen({ event, joinUrl, onContinue }) {
         </div>
       </div>
 
-      <div className="url-card caution organizer-admin-card">
-        <h3>幹事用の管理ページ</h3>
-        <p className="sub">このページは幹事専用です。<br />他人に共有しないでください。</p>
-        <p className="sub">あとから管理する場合は、このページをブックマークしてください。</p>
-      </div>
+      <p className="sub admin-page-caution">この管理ページは幹事専用です。他人に共有しないでください。</p>
 
       <button className="btn btn-primary btn-lg" onClick={onContinue}>管理画面へ進む</button>
     </section>
@@ -233,7 +229,6 @@ function AdminPage({ eventId, token }) {
   const created = params.get('created') === '1'
   const participantTokenFromUrl = params.get('ptoken') || ''
 
-  const adminUrl = `${window.location.origin}/admin/${eventId}?token=${encodeURIComponent(token)}`
   const joinToken = participantTokenFromUrl || event?.participantToken || ''
   const joinUrl = `${window.location.origin}/join/${eventId}?token=${encodeURIComponent(joinToken)}`
 
@@ -474,6 +469,11 @@ function AdminPage({ eventId, token }) {
 
           <section className="card reminder-card">
             <h2>LINEで催促</h2>
+            {counts.unpaid === 0 ? (
+              <p className="sub">未払い者はいません。</p>
+            ) : (
+              <p className="sub">未払いの人に、参加URL付きのメッセージをLINEで送れます。</p>
+            )}
             <button
               className="btn btn-line btn-lg"
               disabled={counts.unpaid === 0}
@@ -481,10 +481,6 @@ function AdminPage({ eventId, token }) {
             >
               LINEで催促する
             </button>
-            <div className="url-card">
-              <p>参加者用URL（共有用）</p>
-              <a href={joinUrl}>{joinUrl}</a>
-            </div>
           </section>
         </>
       )}
@@ -587,11 +583,7 @@ function AdminPage({ eventId, token }) {
         )}
         <div className="settings-info-card participant-share-card">
           <div className="settings-info-card__head">参加者用URL</div>
-          <p className="sub">このURLをLINEグループなどに送ると、参加者が自分で名前を入力して参加できます</p>
-          <div className="url-card">
-            <p>参加者用URL（共有用）</p>
-            <a href={joinUrl}>{joinUrl}</a>
-          </div>
+          <p className="sub">参加者を追加したいときは、LINEグループに再共有できます。参加者はURLから自分で名前を入力して参加します。</p>
           <div className="share-actions">
             <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
             {canUseNativeShare() && (
@@ -618,18 +610,11 @@ function AdminPage({ eventId, token }) {
           </div>
         </div>
         <div className="settings-info-card">
-          <div className="settings-info-card__head">幹事用URLの注意</div>
+          <div className="settings-info-card__head">幹事用管理ページ</div>
           <div className="url-card caution">
-          <p>幹事用URLは他人に共有しないでください</p>
-          <a href={adminUrl}>{adminUrl}</a>
-        </div>
-        </div>
-        <div className="settings-info-card">
-          <div className="settings-info-card__head">ステータス説明</div>
-          <div className="url-card">
-            <p><b>未払い</b>：まだ支払いがされていません</p>
-            <p><b>報告済み</b>：支払い報告済み、幹事の確認待ち</p>
-            <p><b>確認済み</b>：幹事が支払いを確認済み</p>
+            <p>このページは幹事専用です。</p>
+            <p>他人に共有しないでください。</p>
+            <p>あとから開きたい場合は、このページをブックマークしてください。</p>
           </div>
         </div>
       </section>
