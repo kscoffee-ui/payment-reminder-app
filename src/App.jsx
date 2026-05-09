@@ -20,6 +20,7 @@ function AppHeader() {
   return (
     <header className="app-header">
       <img src={kaishuruLogo} alt="カイシュル" className="app-logo" />
+      <div className="app-header-divider" aria-hidden="true" />
     </header>
   )
 }
@@ -568,28 +569,36 @@ function AdminPage({ eventId, token }) {
       )}
 
       {activeAdminTab === 'settings' && (
-      <section className="card admin-card">
-        <h2>設定 / イベント情報</h2>
+      <section className="admin-settings-screen">
+        <h1 className="settings-page-title">設定 / イベント情報</h1>
         {settingsSuccess && <p className="success">{settingsSuccess}</p>}
         {!settingsEditing ? (
           <>
-            <div className="event-meta-grid">
-              <p>イベント名 <b>{event.title}</b></p>
-              <p>日付 <b>{formatDate(event.eventDate)}</b></p>
-              <p>1人あたり <b>{formatMoney(event.amountPerPerson)}</b></p>
-              <p>支払い方法 <b>現金回収</b></p>
-            </div>
-            <div className="settings-info-card">
-              <div className="settings-info-card__head">イベント情報</div>
-              <div className="url-card">
-                <p>幹事からの案内</p><p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO} </p>
-                <p>任意メモ: {event.memo || '-'}</p>
+            <div className="settings-card settings-summary-card">
+              <div className="settings-summary-grid">
+                <article className="settings-summary-item">
+                  <p className="settings-summary-label">イベント名</p><b>{event.title}</b>
+                </article>
+                <article className="settings-summary-item">
+                  <p className="settings-summary-label">日付</p><b>{formatDate(event.eventDate)}</b>
+                </article>
+                <article className="settings-summary-item">
+                  <p className="settings-summary-label">会費</p><b>{formatMoney(event.amountPerPerson)}</b>
+                </article>
+                <article className="settings-summary-item">
+                  <p className="settings-summary-label">支払い</p><b>現金回収</b>
+                </article>
               </div>
             </div>
-            <button className="btn btn-save btn-lg" onClick={startSettingsEdit}>イベント情報を編集</button>
+            <div className="settings-card settings-guide-card">
+              <h3>幹事からの案内</h3>
+              <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
+              {event.memo?.trim() && <p className="sub">{event.memo.trim()}</p>}
+            </div>
+            <button className="btn btn-outline-primary btn-lg settings-edit-trigger" onClick={startSettingsEdit}>イベント情報を編集</button>
           </>
         ) : (
-          <form className="settings-edit-form" onSubmit={saveSettings}>
+          <form className="settings-edit-form settings-card" onSubmit={saveSettings}>
             <label className="field">
               <span>イベント名</span>
               <input value={settingsForm.title} onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })} />
@@ -622,9 +631,9 @@ function AdminPage({ eventId, token }) {
             </div>
           </form>
         )}
-        <div className="settings-info-card participant-share-card">
-          <div className="settings-info-card__head">参加者用URL</div>
-          <p className="sub">参加者を追加したいときは、LINEグループに再共有できます。参加者はURLから自分で名前を入力して参加します。</p>
+        <div className="settings-card participant-share-card">
+          <h3>参加者を追加する</h3>
+          <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
           <div className="share-actions">
             <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
             {canUseNativeShare() && (
