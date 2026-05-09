@@ -24,7 +24,7 @@ body {
 }
 
 .admin-shell {
-  padding-bottom: calc(130px + env(safe-area-inset-bottom));
+  padding-bottom: calc(148px + env(safe-area-inset-bottom));
 }
 
 .card {
@@ -649,11 +649,11 @@ textarea {
 
 .admin-settings-screen {
   display: grid;
-  gap: 16px;
+  gap: 15px;
 }
 
 .settings-page-title {
-  font-size: 1.75rem;
+  font-size: 1.625rem;
   line-height: 1.2;
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -684,7 +684,7 @@ textarea {
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 12px;
-  min-height: 92px;
+  min-height: 86px;
   display: grid;
   gap: 6px;
 }
@@ -699,9 +699,14 @@ textarea {
 }
 
 .settings-summary-item b {
-  font-size: 1.45rem;
+  font-size: 1.34rem;
   line-height: 1.15;
   color: #0f172a;
+}
+
+.settings-summary-item:nth-child(2) b {
+  font-size: 1.25rem;
+  white-space: nowrap;
 }
 
 .settings-guide-card {
@@ -712,12 +717,12 @@ textarea {
 
 .settings-guide-card h3,
 .participant-share-card h3 {
-  font-size: 1.05rem;
+  font-size: 1.33rem;
   font-weight: 800;
 }
 
 .settings-guide-card p {
-  font-size: 0.92rem;
+  font-size: 0.96rem;
   line-height: 1.5;
 }
 
@@ -735,7 +740,7 @@ textarea {
 .participant-share-card {
   display: grid;
   gap: 10px;
-  padding: 16px;
+  padding: 14px;
 }
 
 .participant-share-card .sub {
