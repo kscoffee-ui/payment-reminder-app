@@ -197,6 +197,10 @@ textarea {
   background: #f8fdff;
 }
 
+.admin-page-caution {
+  margin-top: -4px;
+}
+
 .dashboard-top {
   gap: 12px;
 }
