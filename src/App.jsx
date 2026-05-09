@@ -609,14 +609,6 @@ function AdminPage({ eventId, token }) {
             )}
           </div>
         </div>
-        <div className="settings-info-card">
-          <div className="settings-info-card__head">幹事用管理ページ</div>
-          <div className="url-card caution">
-            <p>このページは幹事専用です。</p>
-            <p>他人に共有しないでください。</p>
-            <p>あとから開きたい場合は、このページをブックマークしてください。</p>
-          </div>
-        </div>
       </section>
       )}
 
