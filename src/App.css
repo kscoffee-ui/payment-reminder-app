@@ -303,10 +303,6 @@ textarea {
   gap: 6px;
 }
 
-.url-card.caution {
-  border-color: #f59e0b;
-  background: #fffbeb;
-}
 
 .payment-info-highlight {
   border-color: #2563eb;
@@ -572,13 +568,6 @@ textarea {
   line-height: 1.6;
 }
 
-.organizer-admin-card {
-  gap: 8px;
-}
-
-.organizer-admin-card h3 {
-  font-size: 0.95rem;
-}
 
 .participant-share-card {
   display: grid;
