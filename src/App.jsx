@@ -62,6 +62,10 @@ function formatMoney(value) {
   return `¥${Number(value || 0).toLocaleString('ja-JP')}`
 }
 
+function hasVisibleMemo(value) {
+  const memo = value?.trim()
+  return Boolean(memo && memo !== '-')
+}
 
 function buildJoinShareMessage(event, joinUrl) {
   const eventTitle = event?.title?.trim() || 'イベント'
@@ -577,23 +581,23 @@ function AdminPage({ eventId, token }) {
             <div className="settings-card settings-summary-card">
               <div className="settings-summary-grid">
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label">イベント名</p><b>{event.title}</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">📝</span>イベント名</p><b>{event.title}</b>
                 </article>
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label">日付</p><b>{formatDate(event.eventDate)}</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">📅</span>日付</p><b>{formatDate(event.eventDate)}</b>
                 </article>
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label">会費</p><b>{formatMoney(event.amountPerPerson)}</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">¥</span>会費</p><b>{formatMoney(event.amountPerPerson)}</b>
                 </article>
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label">支払い</p><b>現金回収</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">👛</span>支払い</p><b>現金回収</b>
                 </article>
               </div>
             </div>
             <div className="settings-card settings-guide-card">
-              <h3>幹事からの案内</h3>
+              <h3><span className="settings-guide-icon" aria-hidden="true" />幹事からの案内</h3>
               <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
-              {event.memo?.trim() && <p className="sub">{event.memo.trim()}</p>}
+              {hasVisibleMemo(event.memo) && <p className="sub">{event.memo.trim()}</p>}
             </div>
             <button className="btn btn-outline-primary btn-lg settings-edit-trigger" onClick={startSettingsEdit}>イベント情報を編集</button>
           </>
@@ -632,7 +636,7 @@ function AdminPage({ eventId, token }) {
           </form>
         )}
         <div className="settings-card participant-share-card">
-          <h3>参加者を追加する</h3>
+          <h3><span className="participant-share-icon" aria-hidden="true" />参加者を追加する</h3>
           <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
           <div className="share-actions">
             <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
