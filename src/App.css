@@ -698,17 +698,13 @@ textarea {
 }
 
 .settings-summary-icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #dbeafe;
   color: #2563eb;
-  font-size: 0.7rem;
-  line-height: 1;
-  font-weight: 800;
 }
 
 .settings-summary-item .sub {
@@ -749,17 +745,21 @@ textarea {
 
 .settings-guide-icon,
 .participant-share-icon {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: #dbeafe;
   border: 1px solid #bfdbfe;
+  color: #2563eb;
 }
 
 .participant-share-icon {
   background: #dcfce7;
   border-color: #bbf7d0;
+  color: #16a34a;
 }
 
 .settings-edit-trigger {
@@ -787,6 +787,10 @@ textarea {
 
 .share-actions {
   display: grid;
+  gap: 8px;
+}
+
+.settings-edit-trigger {
   gap: 8px;
 }
 
