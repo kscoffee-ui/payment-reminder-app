@@ -16,6 +16,34 @@ import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
+function SettingsIconBase({ children, color = 'currentColor', size = 22, strokeWidth = 2.2, ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      {children}
+    </svg>
+  )
+}
+
+const SettingsNoteIcon = ({ className }) => <SettingsIconBase className={className}><path d="M7 3.5h8l3 3V20.5H7z" /><path d="M15 3.5v3h3" /><path d="M10 12h5" /><path d="M10 15h4" /></SettingsIconBase>
+const SettingsCalendarIcon = ({ className }) => <SettingsIconBase className={className}><rect x="4.5" y="6.5" width="15" height="13" rx="2.5" /><path d="M8 4.5v4" /><path d="M16 4.5v4" /><path d="M4.5 10.5h15" /></SettingsIconBase>
+const SettingsYenIcon = ({ className }) => <SettingsIconBase className={className}><circle cx="12" cy="12" r="8" /><path d="M9 8.5l3 4 3-4" /><path d="M9 13h6" /><path d="M9.5 15.5h5" /><path d="M12 12.5v4" /></SettingsIconBase>
+const SettingsWalletIcon = ({ className }) => <SettingsIconBase className={className}><path d="M4.5 8.5a2.5 2.5 0 0 1 2.5-2.5h11v12H7a2.5 2.5 0 0 1-2.5-2.5z" /><path d="M18 10h2v4h-2a2 2 0 1 1 0-4z" /></SettingsIconBase>
+const SettingsMegaphoneIcon = ({ className, color = 'currentColor' }) => <SettingsIconBase className={className} color={color}><path d="M3.5 12.5 15 8v8z" /><path d="M7.5 13.5 9 19h2l-1.5-4.5" /><path d="M16.5 9.5a4.5 4.5 0 0 1 0 5" /></SettingsIconBase>
+const SettingsUserPlusIcon = ({ className, color = 'currentColor' }) => <SettingsIconBase className={className} color={color}><circle cx="10" cy="9" r="3" /><path d="M4.5 18a5.5 5.5 0 0 1 11 0" /><path d="M18 8v6" /><path d="M15 11h6" /></SettingsIconBase>
+const SettingsPencilIcon = ({ className }) => <SettingsIconBase className={className}><path d="m5 16.5-.5 3 3-.5L18 8.5 15.5 6z" /><path d="m14.5 7 2.5 2.5" /></SettingsIconBase>
+const SettingsShareIcon = ({ className, color = 'currentColor' }) => <SettingsIconBase className={className} color={color}><circle cx="7" cy="12" r="2" /><circle cx="17" cy="7" r="2" /><circle cx="17" cy="17" r="2" /><path d="M8.8 11 15.2 8" /><path d="m8.8 13 6.4 3" /></SettingsIconBase>
+
 function AppHeader() {
   return (
     <header className="app-header">
@@ -581,25 +609,25 @@ function AdminPage({ eventId, token }) {
             <div className="settings-card settings-summary-card">
               <div className="settings-summary-grid">
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">📝</span>イベント名</p><b>{event.title}</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><SettingsNoteIcon className="settings-icon settings-icon--blue" /></span>イベント名</p><b>{event.title}</b>
                 </article>
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">📅</span>日付</p><b>{formatDate(event.eventDate)}</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><SettingsCalendarIcon className="settings-icon settings-icon--blue" /></span>日付</p><b>{formatDate(event.eventDate)}</b>
                 </article>
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">¥</span>会費</p><b>{formatMoney(event.amountPerPerson)}</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><SettingsYenIcon className="settings-icon settings-icon--blue" /></span>会費</p><b>{formatMoney(event.amountPerPerson)}</b>
                 </article>
                 <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true">👛</span>支払い</p><b>現金回収</b>
+                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><SettingsWalletIcon className="settings-icon settings-icon--blue" /></span>支払い</p><b>現金回収</b>
                 </article>
               </div>
             </div>
             <div className="settings-card settings-guide-card">
-              <h3><span className="settings-guide-icon" aria-hidden="true" />幹事からの案内</h3>
+              <h3><span className="settings-card-icon-circle settings-card-icon-circle--blue" aria-hidden="true"><SettingsMegaphoneIcon className="settings-icon settings-icon--blue" /></span>幹事からの案内</h3>
               <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
               {hasVisibleMemo(event.memo) && <p className="sub">{event.memo.trim()}</p>}
             </div>
-            <button className="btn btn-outline-primary btn-lg settings-edit-trigger" onClick={startSettingsEdit}>イベント情報を編集</button>
+            <button className="btn btn-outline-primary btn-lg settings-edit-trigger" onClick={startSettingsEdit}><SettingsPencilIcon className="settings-action-icon settings-icon--blue" />イベント情報を編集</button>
           </>
         ) : (
           <form className="settings-edit-form settings-card" onSubmit={saveSettings}>
@@ -636,10 +664,10 @@ function AdminPage({ eventId, token }) {
           </form>
         )}
         <div className="settings-card participant-share-card">
-          <h3><span className="participant-share-icon" aria-hidden="true" />参加者を追加する</h3>
+          <h3><span className="settings-card-icon-circle settings-card-icon-circle--green" aria-hidden="true"><SettingsUserPlusIcon className="settings-icon settings-icon--green" /></span>参加者を追加する</h3>
           <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
           <div className="share-actions">
-            <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
+            <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}><span className="line-pill" aria-hidden="true">LINE</span>LINEで共有</button>
             {canUseNativeShare() && (
               <button
                 className="btn btn-secondary"
@@ -658,6 +686,7 @@ function AdminPage({ eventId, token }) {
                   }
                 }}
               >
+                <SettingsShareIcon className="settings-action-icon settings-icon--ink" />
                 その他のアプリで共有
               </button>
             )}

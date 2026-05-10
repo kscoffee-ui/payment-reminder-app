@@ -698,17 +698,12 @@ textarea {
 }
 
 .settings-summary-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #dbeafe;
   color: #2563eb;
-  font-size: 0.7rem;
-  line-height: 1;
-  font-weight: 800;
 }
 
 .settings-summary-item .sub {
@@ -747,17 +742,21 @@ textarea {
   line-height: 1.45;
 }
 
-.settings-guide-icon,
-.participant-share-icon {
-  width: 20px;
-  height: 20px;
+.settings-card-icon-circle {
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-card-icon-circle--blue {
   background: #dbeafe;
   border: 1px solid #bfdbfe;
 }
 
-.participant-share-icon {
+.settings-card-icon-circle--green {
   background: #dcfce7;
   border-color: #bbf7d0;
 }
@@ -766,6 +765,21 @@ textarea {
   min-height: 50px;
   padding: 10px 14px;
   width: 100%;
+}
+.settings-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.settings-icon--blue { color: #2563eb; }
+.settings-icon--green { color: #16a34a; }
+.settings-icon--ink { color: #0f172a; }
+
+.settings-action-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+  flex-shrink: 0;
 }
 
 .btn-outline-primary {
@@ -800,6 +814,21 @@ textarea {
 .share-actions .btn-secondary {
   background: #e5e7eb;
   color: #111827;
+}
+
+.line-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #fff;
+  color: #06c755;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-right: 8px;
 }
 
 @media (max-width: 360px) {
