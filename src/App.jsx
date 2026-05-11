@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Calendar, FileText, JapaneseYen, Megaphone, Pencil, Share2, UserPlus, Wallet } from 'lucide-react'
+import { Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, Megaphone, Pencil, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -21,6 +21,9 @@ function AppHeader() {
   return (
     <header className="app-header">
       <img src={kaishuruLogo} alt="カイシュル" className="app-logo" />
+      <span className="app-header-bell" aria-hidden="true">
+        <Bell size={18} strokeWidth={2} />
+      </span>
       <div className="app-header-divider" aria-hidden="true" />
     </header>
   )
@@ -370,12 +373,6 @@ function AdminPage({ eventId, token }) {
     }
   }
 
-  const unpaidHeadline = counts.unpaid === 0
-    ? '全員確認済みです'
-    : counts.unpaid === 1
-      ? 'ラスト1人が未払いです'
-      : `あと ${counts.unpaid} 人が未払いです`
-
   const startSettingsEdit = () => {
     setSettingsError('')
     setSettingsSuccess('')
@@ -477,56 +474,85 @@ function AdminPage({ eventId, token }) {
       <AppHeader />
       {activeAdminTab === 'dashboard' && (
         <>
-          <section className="card admin-card">
-            <h2>イベント概要</h2>
-            <div className="event-meta-grid">
-              <p>イベント名 <b>{event.title}</b></p>
-              <p>日付 <b>{formatDate(event.eventDate)}</b></p>
-              <p>1人あたりの金額 <b>{formatMoney(event.amountPerPerson)}</b></p>
+          <section className="card admin-event-card">
+            <div className="admin-event-card__icon" aria-hidden="true">
+              <Calendar size={22} strokeWidth={2} />
             </div>
+            <div className="admin-event-card__body">
+              <p className="admin-event-card__title">{event.title || 'イベント名未設定'}</p>
+              <p className="sub">{formatDate(event.eventDate)}</p>
+              <p className="admin-event-card__amount">1人あたり {formatMoney(event.amountPerPerson)}</p>
+            </div>
+            <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
           </section>
 
-          <section className="card admin-card">
-            <h2>ステータスサマリー</h2>
-            <div className="admin-summary-grid">
-              <div className="admin-summary-card summary-neutral"><span>参加者数</span><b>{safeMembers.length}</b></div>
-              <div className="admin-summary-card summary-unpaid"><span>未払い</span><b>{counts.unpaid}</b></div>
-              <div className="admin-summary-card summary-reported"><span>報告済み</span><b>{counts.reported}</b></div>
-              <div className="admin-summary-card summary-confirmed"><span>確認済み</span><b>{counts.confirmed}</b></div>
+          <section className="card dashboard-summary-card">
+            <h2>支払い状況サマリー</h2>
+            <div className="dashboard-summary-top">
+              <article className="dashboard-unpaid-focus">
+                <span>未払い</span>
+                <b>{counts.unpaid}人</b>
+              </article>
+              <div className="dashboard-summary-main">
+                <p className="dashboard-summary-text">{safeMembers.length}人中 {counts.confirmed}人確認済み</p>
+                <p className="dashboard-summary-rate">{counts.rate}%</p>
+              </div>
             </div>
-          </section>
-
-          <section className="card admin-progress-card">
-            <p className="sub">支払い完了率</p>
-            <p className="payment-amount">{counts.rate}%</p>
             <div className="admin-progress-bar"><div className="admin-progress-fill" style={{ width: `${counts.rate}%` }} /></div>
-            <p className={`unpaid-highlight ${counts.unpaid === 1 ? 'last-one' : ''}`}>{unpaidHeadline}</p>
+            <p className="dashboard-summary-foot">{counts.confirmed} / {safeMembers.length}人</p>
+            <div className="dashboard-kpi-grid">
+              <article className="dashboard-kpi dashboard-kpi-total">
+                <span className="dashboard-kpi-label"><Users size={15} />参加者</span>
+                <b>{safeMembers.length}</b>
+              </article>
+              <article className="dashboard-kpi dashboard-kpi-reported">
+                <span className="dashboard-kpi-label"><Clock3 size={15} />報告済み</span>
+                <b>{counts.reported}</b>
+              </article>
+              <article className="dashboard-kpi dashboard-kpi-confirmed">
+                <span className="dashboard-kpi-label"><CheckCircle2 size={15} />確認済み</span>
+                <b>{counts.confirmed}</b>
+              </article>
+            </div>
           </section>
 
-          <section className="card admin-card">
-            <h2>未払い者</h2>
+          <section className="card dashboard-unpaid-list-card">
+            <div className="dashboard-card-head">
+              <h2>未払い者</h2>
+              <span className="dashboard-link-text">すべて見る</span>
+            </div>
             {counts.unpaid > 0 ? (
-              <ul className="unpaid-list-preview">
-                {counts.unpaidMembers.map((member) => <li key={member.id}>{member.name}</li>)}
+              <ul className="dashboard-unpaid-preview">
+                {counts.unpaidMembers.slice(0, 3).map((member) => (
+                  <li key={member.id} className="dashboard-unpaid-row">
+                    <span className="dashboard-unpaid-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+                    <span className="dashboard-unpaid-name">{member.name}</span>
+                    <span className="status-badge badge-unpaid">未払い</span>
+                    <ChevronRight size={17} className="dashboard-unpaid-arrow" aria-hidden="true" />
+                  </li>
+                ))}
               </ul>
             ) : (
-              <p className="sub">未払い者はいません。全員確認済みです。</p>
+              <p className="sub">未払い者はいません</p>
             )}
           </section>
 
-          <section className="card reminder-card">
-            <h2>LINEで催促</h2>
+          <section className="card reminder-card dashboard-line-card">
+            <div className="dashboard-line-head">
+              <span className="dashboard-line-badge" aria-hidden="true">LINE</span>
+              <h2>支払いをLINEで催促できます</h2>
+            </div>
             {counts.unpaid === 0 ? (
-              <p className="sub">未払い者はいません。</p>
+              <p className="sub">未払い者がいないため、催促は不要です。</p>
             ) : (
-              <p className="sub">未払いの人に、参加URL付きのメッセージをLINEで送れます。</p>
+              <p className="sub">未払い者にまとめてメッセージを送る</p>
             )}
             <button
               className="btn btn-line btn-lg"
               disabled={counts.unpaid === 0}
               onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
             >
-              LINEで催促する
+              LINEで催促
             </button>
           </section>
         </>
