@@ -480,8 +480,7 @@ function AdminPage({ eventId, token }) {
             </div>
             <div className="admin-event-card__body">
               <p className="admin-event-card__title">{event.title || 'イベント名未設定'}</p>
-              <p className="sub">{formatDate(event.eventDate)}</p>
-              <p className="admin-event-card__amount">1人あたり {formatMoney(event.amountPerPerson)}</p>
+              <p className="admin-event-card__meta">{formatDate(event.eventDate)}{' '}{formatMoney(event.amountPerPerson)}</p>
             </div>
             <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
           </section>
@@ -535,25 +534,20 @@ function AdminPage({ eventId, token }) {
             ) : (
               <p className="sub">未払い者はいません</p>
             )}
-          </section>
-
-          <section className="card reminder-card dashboard-line-card">
-            <div className="dashboard-line-head">
-              <span className="dashboard-line-badge" aria-hidden="true">LINE</span>
-              <h2>支払いをLINEで催促できます</h2>
+            <div className="dashboard-line-inline">
+              <button
+                className="btn btn-line btn-lg"
+                disabled={counts.unpaid === 0}
+                onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
+              >
+                LINEで催促
+              </button>
+              {counts.unpaid === 0 ? (
+                <p className="sub">未払い者がいないため、催促は不要です。</p>
+              ) : (
+                <p className="sub">未払い者にまとめてメッセージを送る</p>
+              )}
             </div>
-            {counts.unpaid === 0 ? (
-              <p className="sub">未払い者がいないため、催促は不要です。</p>
-            ) : (
-              <p className="sub">未払い者にまとめてメッセージを送る</p>
-            )}
-            <button
-              className="btn btn-line btn-lg"
-              disabled={counts.unpaid === 0}
-              onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
-            >
-              LINEで催促
-            </button>
           </section>
         </>
       )}
