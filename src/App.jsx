@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, Megaphone, Pencil, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, Megaphone, Pencil, Search, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -60,6 +60,13 @@ function formatDate(value) {
 
 function formatMoney(value) {
   return `¥${Number(value || 0).toLocaleString('ja-JP')}`
+}
+
+function formatUpdatedAt(value) {
+  if (!value) return '更新日時なし'
+  const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value)
+  if (Number.isNaN(date.getTime())) return `更新: ${value}`
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} 更新`
 }
 
 function hasVisibleMemo(value) {
@@ -258,6 +265,7 @@ function AdminPage({ eventId, token }) {
   const [workingId, setWorkingId] = useState('')
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
+  const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [settingsEditing, setSettingsEditing] = useState(false)
   const [settingsForm, setSettingsForm] = useState({
     title: '',
@@ -318,9 +326,13 @@ function AdminPage({ eventId, token }) {
   }, [safeMembers])
 
   const filteredMembers = useMemo(() => {
-    if (memberStatusFilter === 'all') return safeMembers
-    return safeMembers.filter((member) => member.status === memberStatusFilter)
-  }, [memberStatusFilter, safeMembers])
+    const query = memberSearchQuery.trim().toLowerCase()
+    return safeMembers.filter((member) => {
+      const matchesStatus = memberStatusFilter === 'all' || member.status === memberStatusFilter
+      const matchesName = !query || String(member.name || '').toLowerCase().includes(query)
+      return matchesStatus && matchesName
+    })
+  }, [memberSearchQuery, memberStatusFilter, safeMembers])
 
   const reminderMessage = useMemo(() => {
     if (!event) return ''
@@ -381,6 +393,17 @@ function AdminPage({ eventId, token }) {
       memo: event.memo || '',
     })
     setSettingsEditing(true)
+  }
+
+  const openEventSettingsEdit = () => {
+    startSettingsEdit()
+    setActiveAdminTab('settings')
+  }
+
+  const openUnpaidMembers = () => {
+    setMemberSearchQuery('')
+    setMemberStatusFilter('unpaid')
+    setActiveAdminTab('members')
   }
 
   const cancelSettingsEdit = () => {
@@ -445,23 +468,34 @@ function AdminPage({ eventId, token }) {
   )
 
   const memberCard = (member) => (
-    <li key={member.id} className={`member-row-card status-${member.status}`}>
-      <div className="member-head">
-        <b>{member.name}</b>
-        <span className="member-amount">{formatMoney(event.amountPerPerson)}</span>
-      </div>
-      <div className="member-meta">
-        <span className={`status-badge badge-${member.status}`}>{member.status === 'reported' ? '確認待ち' : statusLabel(member.status)}</span>
-        <span className="sub">{paymentLabel(member.paymentMethod)}</span>
-      </div>
-      {member.status === 'reported' && <p className="sub">報告メモ: {member.proofMemo || 'なし'}</p>}
-      <p className="sub">更新: {member.updatedAt || '-'}</p>
-      <div className="actions">
-        {member.status === 'reported' && (
-          <button className="btn btn-confirm" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
-        )}
-        <button className="btn btn-danger btn-ghost-danger" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
-      </div>
+    <li key={member.id} className={`member-list-item member-list-item--${member.status}`}>
+      <details className="member-list-details">
+        <summary className="member-list-row">
+          <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+          <span className="member-row-main">
+            <span className="member-row-name">{member.name || '名前未設定'}</span>
+            <span className="member-row-updated">{formatUpdatedAt(member.updatedAt)}</span>
+          </span>
+          <span className={`status-badge member-status-badge badge-${member.status}`}>
+            {member.status === 'reported' ? '報告済み' : statusLabel(member.status)}
+          </span>
+          <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
+        </summary>
+        <div className="member-row-detail">
+          <div className="member-detail-grid">
+            <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+            <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod)}</b></p>
+            <p><span>状態</span><b>{statusLabel(member.status)}</b></p>
+            <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
+          </div>
+          <div className="member-row-actions">
+            {member.status === 'reported' && (
+              <button className="btn btn-confirm member-action-btn" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
+            )}
+            <button className="btn btn-ghost-danger member-action-btn" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
+          </div>
+        </div>
+      </details>
     </li>
   )
 
@@ -478,7 +512,9 @@ function AdminPage({ eventId, token }) {
               <p className="admin-event-card__title">{event.title || 'イベント名未設定'}</p>
               <p className="admin-event-card__meta">{formatDate(event.eventDate)}{' '}{formatMoney(event.amountPerPerson)}</p>
             </div>
-            <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
+            <button className="admin-event-card__edit-button" type="button" aria-label="イベント情報を編集" onClick={openEventSettingsEdit}>
+              <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
+            </button>
           </section>
 
           <section className="dashboard-summary-section">
@@ -529,7 +565,7 @@ function AdminPage({ eventId, token }) {
           <section className="card dashboard-unpaid-list-card">
             <div className="dashboard-card-head">
               <h2>未払い者</h2>
-              <span className="dashboard-link-text">すべて見る</span>
+              <button className="dashboard-link-text" type="button" onClick={openUnpaidMembers}>すべて見る</button>
             </div>
             {counts.unpaid > 0 ? (
               <ul className="dashboard-unpaid-preview">
@@ -538,68 +574,56 @@ function AdminPage({ eventId, token }) {
                     <span className="dashboard-unpaid-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
                     <span className="dashboard-unpaid-name">{member.name}</span>
                     <span className="status-badge badge-unpaid">未払い</span>
-                    <ChevronRight size={17} className="dashboard-unpaid-arrow" aria-hidden="true" />
                   </li>
                 ))}
+                {counts.unpaidMembers.length > 3 && (
+                  <li className="dashboard-unpaid-ellipsis" aria-hidden="true">︙</li>
+                )}
               </ul>
             ) : (
               <p className="sub">未払い者はいません</p>
             )}
             <div className="dashboard-line-inline">
               <button
-                className="btn btn-line btn-lg"
+                className="btn btn-line btn-lg line-reminder-button"
                 disabled={counts.unpaid === 0}
                 onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
               >
-                LINEで催促
+                <span className="line-reminder-icon" aria-hidden="true">LINE</span>
+                <span className="line-reminder-text">
+                  <span className="line-reminder-title">LINEで催促</span>
+                  <span className="line-reminder-subtitle">未払い者にまとめてメッセージを送る</span>
+                </span>
               </button>
-              {counts.unpaid === 0 ? (
-                <p className="sub">未払い者がいないため、催促は不要です。</p>
-              ) : (
-                <p className="sub">未払い者にまとめてメッセージを送る</p>
-              )}
             </div>
           </section>
         </>
       )}
 
       {activeAdminTab === 'members' && (
-      <section className="card participants-card admin-card">
-        <h2>参加者一覧</h2>
+      <section className="participants-screen">
+        <h1 className="participants-title">参加者一覧</h1>
 
-        <div className="status-pill-row" role="tablist" aria-label="参加者ステータスフィルター">
-          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて（{safeMembers.length}）</button>
-          <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い（{counts.unpaid}）</button>
-          <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>報告済み（{counts.reported}）</button>
-          <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み（{counts.confirmed}）</button>
+        <label className="member-search">
+          <Search size={19} strokeWidth={2.4} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="名前で検索"
+            value={memberSearchQuery}
+            onChange={(e) => setMemberSearchQuery(e.target.value)}
+          />
+        </label>
+
+        <div className="status-pill-row member-filter-row" role="tablist" aria-label="参加者ステータスフィルター">
+          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて</button>
+          <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い</button>
+          <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>報告済み</button>
+          <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み</button>
         </div>
 
-        {memberStatusFilter === 'all' ? (
-          <>
-            <div className="list-section">
-              <h3 className="title-unpaid">未払い（{counts.unpaid}）</h3>
-              <ul className="list">{counts.unpaidMembers.map(memberCard)}</ul>
-              {counts.unpaid === 0 && <p className="sub">未払いの参加者はいません。</p>}
-            </div>
-
-            <div className="list-section">
-              <h3 className="title-reported">報告済み / 確認待ち（{counts.reported}）</h3>
-              <ul className="list">{counts.reportedMembers.map(memberCard)}</ul>
-              {counts.reported === 0 && <p className="sub">報告済み / 確認待ちの参加者はいません。</p>}
-            </div>
-
-            <div className="list-section">
-              <h3 className="title-confirmed">確認済み（{counts.confirmed}）</h3>
-              <ul className="list">{counts.confirmedMembers.map(memberCard)}</ul>
-              {counts.confirmed === 0 && <p className="sub">確認済みの参加者はいません。</p>}
-            </div>
-          </>
-        ) : (
-          <div className="list-section">
-            <h3>表示中: {statusLabel(memberStatusFilter)}</h3>
-            <ul className="list">{filteredMembers.map(memberCard)}</ul>
-            {filteredMembers.length === 0 && <p className="sub">該当する参加者はいません。</p>}
-          </div>
+        <ul className="member-list">{filteredMembers.map(memberCard)}</ul>
+        {filteredMembers.length === 0 && (
+          <p className="member-empty">該当する参加者はいません。</p>
         )}
       </section>
       )}
