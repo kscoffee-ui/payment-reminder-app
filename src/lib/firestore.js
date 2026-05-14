@@ -1,5 +1,8 @@
 import { collectionUrl, docUrl } from '../firebase'
 
+const POLL_INTERVAL_MS = 30000
+const QUOTA_BACKOFF_MS = 60000
+
 function randomToken() {
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
 }
@@ -44,7 +47,9 @@ async function request(url, options = {}) {
   const text = await res.text()
   const json = text ? JSON.parse(text) : {}
   if (!res.ok) {
-    throw new Error(json?.error?.message || 'Firestore通信に失敗しました。')
+    const error = new Error(json?.error?.message || 'Firestore通信に失敗しました。')
+    error.status = res.status
+    throw error
   }
   return json
 }
@@ -86,23 +91,63 @@ export async function getEvent(eventId) {
   return fromDoc(json)
 }
 
+function isQuotaError(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return error?.status === 429
+    || message.includes('quota exceeded')
+    || message.includes('resource exhausted')
+    || message.includes('resource_exhausted')
+    || message.includes('too many requests')
+}
+
 function poller(load, onData, onError) {
   let active = true
+  let timerId = null
+
+  const isDocumentHidden = () => typeof document !== 'undefined' && document.hidden
+
+  const schedule = (delay) => {
+    if (!active) return
+    timerId = setTimeout(tick, delay)
+  }
 
   const tick = async () => {
     if (!active) return
+    if (isDocumentHidden()) return
     try {
       const data = await load()
       onData(data)
+      schedule(POLL_INTERVAL_MS)
     } catch (e) {
+      if (isQuotaError(e)) {
+        schedule(QUOTA_BACKOFF_MS)
+        return
+      }
       onError?.(e)
-    } finally {
-      if (active) setTimeout(tick, 1500)
+      schedule(POLL_INTERVAL_MS)
     }
   }
+
+  const handleVisibilityChange = () => {
+    if (!active || isDocumentHidden()) return
+    if (timerId) {
+      clearTimeout(timerId)
+      timerId = null
+    }
+    tick()
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  }
+
   tick()
   return () => {
     active = false
+    if (timerId) clearTimeout(timerId)
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }
 }
 
