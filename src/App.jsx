@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, Megaphone, Pencil, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, Megaphone, Pencil, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -21,10 +21,6 @@ function AppHeader() {
   return (
     <header className="app-header">
       <img src={kaishuruLogo} alt="カイシュル" className="app-logo" />
-      <span className="app-header-bell" aria-hidden="true">
-        <Bell size={18} strokeWidth={2} />
-      </span>
-      <div className="app-header-divider" aria-hidden="true" />
     </header>
   )
 }
@@ -485,33 +481,48 @@ function AdminPage({ eventId, token }) {
             <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
           </section>
 
-          <section className="card dashboard-summary-card">
-            <h2>支払い状況サマリー</h2>
-            <div className="dashboard-summary-top">
-              <article className="dashboard-unpaid-focus">
-                <span>未払い</span>
-                <b>{counts.unpaid}人</b>
-              </article>
-              <div className="dashboard-summary-main">
-                <p className="dashboard-summary-text">{safeMembers.length}人中 {counts.confirmed}人確認済み</p>
-                <p className="dashboard-summary-rate">{counts.rate}%</p>
+          <section className="dashboard-summary-section">
+            <h2 className="dashboard-section-title">支払い状況サマリー</h2>
+            <div className="card dashboard-summary-card">
+              <div className="dashboard-summary-top">
+                <article className="dashboard-unpaid-focus">
+                  <span>未払い</span>
+                  <b className="dashboard-unpaid-count">
+                    <span className="dashboard-unpaid-number">{counts.unpaid}</span>
+                    <span className="dashboard-unpaid-unit">人</span>
+                  </b>
+                </article>
+                <div className="dashboard-summary-main">
+                  <div className="dashboard-summary-main-head">
+                    <p className="dashboard-summary-text">
+                      <span className="dashboard-summary-number">{safeMembers.length}</span>
+                      <span className="dashboard-summary-unit">人中</span>
+                      <span className="dashboard-summary-number">{counts.confirmed}</span>
+                      <span className="dashboard-summary-unit">人確認済み</span>
+                    </p>
+                    <p className="dashboard-summary-rate">
+                      <span className="dashboard-summary-rate-value">{counts.rate}</span>
+                      <span className="dashboard-summary-rate-unit">%</span>
+                    </p>
+                  </div>
+                  <div className="admin-progress-bar"><div className="admin-progress-fill" style={{ width: `${counts.rate}%` }} /></div>
+                  <p className="dashboard-summary-foot">{counts.confirmed} / {safeMembers.length}人</p>
+                </div>
               </div>
-            </div>
-            <div className="admin-progress-bar"><div className="admin-progress-fill" style={{ width: `${counts.rate}%` }} /></div>
-            <p className="dashboard-summary-foot">{counts.confirmed} / {safeMembers.length}人</p>
-            <div className="dashboard-kpi-grid">
-              <article className="dashboard-kpi dashboard-kpi-total">
-                <span className="dashboard-kpi-label"><Users size={15} />参加者</span>
-                <b>{safeMembers.length}</b>
-              </article>
-              <article className="dashboard-kpi dashboard-kpi-reported">
-                <span className="dashboard-kpi-label"><Clock3 size={15} />報告済み</span>
-                <b>{counts.reported}</b>
-              </article>
-              <article className="dashboard-kpi dashboard-kpi-confirmed">
-                <span className="dashboard-kpi-label"><CheckCircle2 size={15} />確認済み</span>
-                <b>{counts.confirmed}</b>
-              </article>
+              <div className="dashboard-kpi-grid">
+                <article className="dashboard-kpi dashboard-kpi-total">
+                  <span className="dashboard-kpi-label"><Users size={15} />参加者</span>
+                  <b>{safeMembers.length}</b>
+                </article>
+                <article className="dashboard-kpi dashboard-kpi-reported">
+                  <span className="dashboard-kpi-label"><Clock3 size={15} />報告済み</span>
+                  <b>{counts.reported}</b>
+                </article>
+                <article className="dashboard-kpi dashboard-kpi-confirmed">
+                  <span className="dashboard-kpi-label"><CheckCircle2 size={15} />確認済み</span>
+                  <b>{counts.confirmed}</b>
+                </article>
+              </div>
             </div>
           </section>
 
