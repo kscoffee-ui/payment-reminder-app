@@ -24,16 +24,6 @@ import { KaishuruButton } from './components/KaishuruButton'
 import KaishuruCard from './components/KaishuruCard'
 import KaishuruInput from './components/KaishuruInput'
 import ConfirmDialog from './components/ConfirmDialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './components/ui/alert-dialog'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
 function AppHeader() {
@@ -808,26 +798,23 @@ function AdminPage({ eventId, token }) {
       )}
 
       {adminBottomNav}
-      <AlertDialog open={Boolean(deleteTargetMember)} onOpenChange={handleDeleteDialogOpenChange}>
-        <AlertDialogContent className="member-delete-dialog">
-          <AlertDialogHeader>
-            <AlertDialogTitle>参加者を削除しますか？</AlertDialogTitle>
-            <AlertDialogDescription>
-              この操作は取り消せません。間違って参加した人や重複登録された人だけ削除してください。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteDialogBusy}>キャンセル</AlertDialogCancel>
-            <AlertDialogAction
-              className="member-delete-dialog__action"
-              disabled={deleteDialogBusy}
-              onClick={handleConfirmDelete}
-            >
-              {deleteDialogBusy ? '削除中...' : '削除する'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={Boolean(deleteTargetMember)}
+        onOpenChange={handleDeleteDialogOpenChange}
+        title="参加者を削除しますか？"
+        description={
+          deleteTargetMember
+            ? `${deleteTargetMember.name}さんを参加者一覧から削除します。削除すると元に戻せません。`
+            : 'この参加者を一覧から削除します。削除すると元に戻せません。'
+        }
+        confirmLabel="削除する"
+        cancelLabel="キャンセル"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        disabled={deleteDialogBusy}
+        loading={deleteDialogBusy}
+        className="member-delete-dialog"
+      />
     </main>
   )
 }
