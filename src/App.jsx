@@ -724,11 +724,11 @@ function AdminPage({ eventId, token }) {
             </label>
             <label className="field">
               <span>日付</span>
-              <input type="date" value={settingsForm.eventDate} onChange={(e) => setSettingsForm({ ...settingsForm, eventDate: e.target.value })} />
+              <KaishuruInput type="date" value={settingsForm.eventDate} onChange={(e) => setSettingsForm({ ...settingsForm, eventDate: e.target.value })} />
             </label>
             <label className="field">
               <span>1人あたりの金額</span>
-              <input type="number" min="1" step="1" value={settingsForm.amountPerPerson} onChange={(e) => setSettingsForm({ ...settingsForm, amountPerPerson: e.target.value })} />
+              <KaishuruInput type="number" min="1" step="1" value={settingsForm.amountPerPerson} onChange={(e) => setSettingsForm({ ...settingsForm, amountPerPerson: e.target.value })} />
             </label>
             <div className="field fixed-field">
               <span>支払い方法</span>
