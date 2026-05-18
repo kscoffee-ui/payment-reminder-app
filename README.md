@@ -38,3 +38,12 @@
 - shadcn/uiなどを用いたUIコンポーネント整理
 - 通知機能
 - 管理画面の分析機能
+
+- ## 画面イメージ
+
+<p>
+  <img src="docs/screenshots/create-event.png" width="240" alt="イベント作成画面">
+  <img src="docs/screenshots/dashboard.png" width="240" alt="幹事ダッシュボード">
+  <img src="docs/screenshots/participants.png" width="240" alt="参加者一覧画面">
+  <img src="docs/screenshots/settings.png" width="240" alt="設定画面">
+</p>
