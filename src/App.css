@@ -735,6 +735,8 @@ textarea {
   object-fit: contain;
 }
 .admin-event-card { display:flex; align-items:center; gap:10px; padding:14px 14px; }
+.shadcn-admin-event-card { border:1px solid hsl(214 32% 91%); border-radius:16px; background:var(--card); box-shadow:0 7px 20px rgb(15 23 42 / 5%); }
+.admin-event-card__content { width:100%; padding:0; display:flex; align-items:center; gap:10px; }
 .admin-event-card__icon { width:42px; height:42px; border-radius:12px; background:#eaf1ff; color:#2563eb; display:inline-flex; align-items:center; justify-content:center; }
 .admin-event-card__body { display:grid; gap:2px; flex:1; min-width:0; }
 .admin-event-card__title { font-weight:800; color:#0f172a; }

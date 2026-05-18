@@ -15,6 +15,8 @@ import {
 } from './lib/firestore'
 import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
+import { Button } from './components/ui/button'
+import { Card, CardContent } from './components/ui/card'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
 function AppHeader() {
@@ -522,18 +524,20 @@ function AdminPage({ eventId, token }) {
       <AppHeader />
       {activeAdminTab === 'dashboard' && (
         <>
-          <section className="card admin-event-card">
-            <div className="admin-event-card__icon" aria-hidden="true">
-              <Calendar size={22} strokeWidth={2} />
-            </div>
-            <div className="admin-event-card__body">
-              <p className="admin-event-card__title">{event.title || 'イベント名未設定'}</p>
-              <p className="admin-event-card__meta">{formatDate(event.eventDate)}{' '}{formatMoney(event.amountPerPerson)}</p>
-            </div>
-            <button className="admin-event-card__edit-button" type="button" aria-label="イベント情報を編集" onClick={openEventSettingsEdit}>
-              <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
-            </button>
-          </section>
+          <Card className="admin-event-card shadcn-admin-event-card">
+            <CardContent className="admin-event-card__content">
+              <div className="admin-event-card__icon" aria-hidden="true">
+                <Calendar size={22} strokeWidth={2} />
+              </div>
+              <div className="admin-event-card__body">
+                <p className="admin-event-card__title">{event.title || 'イベント名未設定'}</p>
+                <p className="admin-event-card__meta">{formatDate(event.eventDate)}{' '}{formatMoney(event.amountPerPerson)}</p>
+              </div>
+              <Button className="admin-event-card__edit-button" type="button" variant="ghost" size="icon" aria-label="イベント情報を編集" onClick={openEventSettingsEdit}>
+                <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
+              </Button>
+            </CardContent>
+          </Card>
 
           <section className="dashboard-summary-section">
             <h2 className="dashboard-section-title">支払い状況サマリー</h2>
