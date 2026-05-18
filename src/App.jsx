@@ -19,6 +19,7 @@ import { Button } from './components/ui/button'
 import { Card, CardContent } from './components/ui/card'
 import { Badge } from './components/ui/badge'
 import { Input } from './components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -671,12 +672,14 @@ function AdminPage({ eventId, token }) {
           />
         </label>
 
-        <div className="status-pill-row member-filter-row" role="tablist" aria-label="参加者ステータスフィルター">
-          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて</button>
-          <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い</button>
-          <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>確認待ち</button>
-          <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み</button>
-        </div>
+        <Tabs value={memberStatusFilter} onValueChange={setMemberStatusFilter} className="member-filter-tabs">
+          <TabsList className="status-pill-row member-filter-row" aria-label="参加者ステータスフィルター">
+            <TabsTrigger value="all" className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`}>すべて</TabsTrigger>
+            <TabsTrigger value="unpaid" className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`}>未払い</TabsTrigger>
+            <TabsTrigger value="reported" className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`}>確認待ち</TabsTrigger>
+            <TabsTrigger value="confirmed" className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`}>確認済み</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <ul className="member-list">{filteredMembers.map(memberCard)}</ul>
         {filteredMembers.length === 0 && (

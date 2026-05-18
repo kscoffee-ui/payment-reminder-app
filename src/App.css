@@ -667,9 +667,10 @@ textarea {
 .member-search { min-height:48px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; display:flex; align-items:center; gap:8px; padding:0 12px; color:#64748b; box-shadow:0 4px 12px rgb(15 23 42 / 4%); }
 .member-search input { border:0; min-height:0; padding:0; background:transparent; color:#0f172a; font-size:.92rem; font-weight:600; outline:0; }
 .member-search input::placeholder { color:#94a3b8; font-weight:600; opacity:1; }
-.member-filter-row { flex-wrap:nowrap; gap:8px; overflow-x:auto; padding:2px 1px 5px; scrollbar-width:none; transform: translateX(11px);}
+.member-filter-tabs { width:100%; }
+.member-filter-row { width:100%; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); flex-wrap:nowrap; gap:6px; overflow:visible; padding:2px 0 5px; scrollbar-width:none; transform:none; background:transparent; height:auto; }
 .member-filter-row::-webkit-scrollbar { display:none; }
-.member-filter-row .status-pill { flex:0 0 auto; min-height:34px; padding:6px 16px; font-size:.82rem; font-weight:700; box-shadow:none; }
+.member-filter-row .status-pill { flex:1 1 0; min-width:0; min-height:34px; height:auto; padding:6px 8px; font-size:.82rem; font-weight:700; box-shadow:none; white-space:nowrap; }
 .member-list { list-style:none; margin:0; padding:0; border:1px solid #e5e7eb; border-radius:14px; background:#fff; overflow:hidden; box-shadow:0 6px 18px rgb(15 23 42 / 4%); }
 .member-list-item { border-bottom:1px solid #eef2f7; }
 .member-list-item:last-child { border-bottom:0; }
