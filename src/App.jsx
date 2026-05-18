@@ -17,6 +17,7 @@ import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
 import { Button } from './components/ui/button'
 import { Card, CardContent } from './components/ui/card'
+import { Badge } from './components/ui/badge'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
 function AppHeader() {
@@ -494,9 +495,9 @@ function AdminPage({ eventId, token }) {
                 確認済みにする
               </button>
             ) : (
-              <span className={`status-badge member-status-badge badge-${member.status}`}>
+              <Badge variant="secondary" className={`status-badge member-status-badge badge-${member.status}`}>
                 {statusLabel(member.status)}
-              </span>
+              </Badge>
             )}
           </span>
           <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
