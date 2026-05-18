@@ -710,11 +710,11 @@ function AdminPage({ eventId, token }) {
                 </article>
               </div>
             </div>
-            <div className="settings-card settings-guide-card">
+            <KaishuruCard variant="soft" className="settings-guide-card">
               <h3><span className="settings-guide-icon" aria-hidden="true"><Megaphone size={20} strokeWidth={2} /></span>幹事からの案内</h3>
               <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
               {hasVisibleMemo(event.memo) && <p className="sub">{event.memo.trim()}</p>}
-            </div>
+            </KaishuruCard>
             <KaishuruButton variant="primary" size="lg" className="settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</KaishuruButton>
           </>
         ) : (
