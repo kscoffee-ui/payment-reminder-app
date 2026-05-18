@@ -23,6 +23,7 @@ import { StatusBadge } from './components/StatusBadge'
 import { KaishuruButton } from './components/KaishuruButton'
 import KaishuruCard from './components/KaishuruCard'
 import KaishuruInput from './components/KaishuruInput'
+import ConfirmDialog from './components/ConfirmDialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -297,6 +298,7 @@ function AdminPage({ eventId, token }) {
   const [settingsError, setSettingsError] = useState('')
   const [settingsSuccess, setSettingsSuccess] = useState('')
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsSaveConfirmOpen, setSettingsSaveConfirmOpen] = useState(false)
 
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
@@ -445,10 +447,11 @@ function AdminPage({ eventId, token }) {
   const cancelSettingsEdit = () => {
     if (settingsSaving) return
     setSettingsError('')
+    setSettingsSaveConfirmOpen(false)
     setSettingsEditing(false)
   }
 
-  const saveSettings = async (e) => {
+  const requestSettingsSave = (e) => {
     e.preventDefault()
     if (settingsSaving) return
     setSettingsError('')
@@ -457,8 +460,12 @@ function AdminPage({ eventId, token }) {
     if (!settingsForm.title.trim()) return setSettingsError('イベント名を入力してください。')
     if (!settingsForm.eventDate) return setSettingsError('日付を入力してください。')
     if (!/^\d+$/.test(String(settingsForm.amountPerPerson)) || Number(settingsForm.amountPerPerson) < 1) return setSettingsError('1人あたりの金額は1円以上の整数で入力してください。')
-    if (!window.confirm('イベント情報を変更すると、参加者側に表示される金額や支払い情報も変更されます。保存しますか？')) return
 
+    setSettingsSaveConfirmOpen(true)
+  }
+
+  const saveSettings = async () => {
+    if (settingsSaving) return
     setSettingsSaving(true)
     try {
       await updateEventInfo(eventId, {
@@ -475,6 +482,7 @@ function AdminPage({ eventId, token }) {
       setSettingsError(err.message)
     } finally {
       setSettingsSaving(false)
+      setSettingsSaveConfirmOpen(false)
     }
   }
 
@@ -719,7 +727,7 @@ function AdminPage({ eventId, token }) {
             <KaishuruButton variant="primary" size="lg" className="settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</KaishuruButton>
           </>
         ) : (
-          <form className="settings-edit-form settings-card" onSubmit={saveSettings}>
+          <form className="settings-edit-form settings-card" onSubmit={requestSettingsSave}>
             <label className="field">
               <span>イベント名</span>
               <KaishuruInput value={settingsForm.title} onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })} />
@@ -750,6 +758,21 @@ function AdminPage({ eventId, token }) {
               <button className="btn btn-save btn-lg" disabled={settingsSaving}>{settingsSaving ? '保存中...' : '保存する'}</button>
               <button type="button" className="btn btn-secondary btn-lg" onClick={cancelSettingsEdit} disabled={settingsSaving}>キャンセル</button>
             </div>
+            <ConfirmDialog
+              open={settingsSaveConfirmOpen}
+              onOpenChange={(open) => {
+                if (settingsSaving) return
+                setSettingsSaveConfirmOpen(open)
+              }}
+              title="イベント情報を保存しますか？"
+              description="変更内容を保存すると、参加者に表示されるイベント情報にも反映されます。"
+              confirmLabel="保存する"
+              cancelLabel="キャンセル"
+              variant="default"
+              onConfirm={saveSettings}
+              disabled={settingsSaving}
+              loading={settingsSaving}
+            />
           </form>
         )}
         <KaishuruCard variant="info" className="participant-share-card">

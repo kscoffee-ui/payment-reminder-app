@@ -17,6 +17,8 @@ const actionClasses = {
 }
 
 export default function ConfirmDialog({
+  open,
+  onOpenChange,
   trigger,
   title,
   description,
@@ -32,7 +34,7 @@ export default function ConfirmDialog({
   const actionDisabled = disabled || loading
 
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       {trigger && (
         <AlertDialogTrigger asChild>
           {trigger}
