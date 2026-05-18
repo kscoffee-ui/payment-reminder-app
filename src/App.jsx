@@ -714,7 +714,7 @@ function AdminPage({ eventId, token }) {
               <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
               {hasVisibleMemo(event.memo) && <p className="sub">{event.memo.trim()}</p>}
             </KaishuruCard>
-            <KaishuruButton variant="primary" size="lg" className="settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</KaishuruButton>
+            <KaishuruButton variant="ghost" size="lg" className="settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</KaishuruButton>
           </>
         ) : (
           <form className="settings-edit-form settings-card" onSubmit={requestSettingsSave}>
@@ -745,8 +745,8 @@ function AdminPage({ eventId, token }) {
             </label>
             {settingsError && <p className="error">{settingsError}</p>}
             <div className="settings-edit-actions">
-              <button className="btn btn-save btn-lg" disabled={settingsSaving}>{settingsSaving ? '保存中...' : '保存する'}</button>
-              <button type="button" className="btn btn-secondary btn-lg" onClick={cancelSettingsEdit} disabled={settingsSaving}>キャンセル</button>
+              <KaishuruButton type="submit" variant="primary" size="lg" className="btn btn-save btn-lg" disabled={settingsSaving}>{settingsSaving ? '保存中...' : '保存する'}</KaishuruButton>
+              <KaishuruButton type="button" variant="secondary" size="lg" className="btn btn-secondary btn-lg" onClick={cancelSettingsEdit} disabled={settingsSaving}>キャンセル</KaishuruButton>
             </div>
             <ConfirmDialog
               open={settingsSaveConfirmOpen}
@@ -769,9 +769,10 @@ function AdminPage({ eventId, token }) {
           <h3><span className="participant-share-icon" aria-hidden="true"><UserPlus size={20} strokeWidth={2} /></span>参加者を追加する</h3>
           <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
           <div className="share-actions">
-            <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
+            <KaishuruButton variant="line" className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</KaishuruButton>
             {canUseNativeShare() && (
-              <button
+              <KaishuruButton
+                variant="secondary"
                 className="btn btn-secondary"
                 disabled={!joinUrl}
                 onClick={async () => {
@@ -790,7 +791,7 @@ function AdminPage({ eventId, token }) {
               >
                 <Share2 size={20} strokeWidth={2} />
                 その他のアプリで共有
-              </button>
+              </KaishuruButton>
             )}
           </div>
         </KaishuruCard>
