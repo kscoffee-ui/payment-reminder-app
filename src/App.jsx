@@ -21,6 +21,7 @@ import { Input } from './components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { StatusBadge } from './components/StatusBadge'
 import { KaishuruButton } from './components/KaishuruButton'
+import KaishuruCard from './components/KaishuruCard'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -750,7 +751,7 @@ function AdminPage({ eventId, token }) {
             </div>
           </form>
         )}
-        <div className="settings-card participant-share-card">
+        <KaishuruCard variant="info" className="participant-share-card">
           <h3><span className="participant-share-icon" aria-hidden="true"><UserPlus size={20} strokeWidth={2} /></span>参加者を追加する</h3>
           <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
           <div className="share-actions">
@@ -778,7 +779,7 @@ function AdminPage({ eventId, token }) {
               </button>
             )}
           </div>
-        </div>
+        </KaishuruCard>
       </section>
       )}
 
