@@ -20,6 +20,7 @@ import { Card, CardContent } from './components/ui/card'
 import { Input } from './components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { StatusBadge } from './components/StatusBadge'
+import { KaishuruButton } from './components/KaishuruButton'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -713,7 +714,7 @@ function AdminPage({ eventId, token }) {
               <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
               {hasVisibleMemo(event.memo) && <p className="sub">{event.memo.trim()}</p>}
             </div>
-            <button className="btn btn-outline-primary btn-lg settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</button>
+            <KaishuruButton variant="primary" size="lg" className="settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</KaishuruButton>
           </>
         ) : (
           <form className="settings-edit-form settings-card" onSubmit={saveSettings}>
