@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { StatusBadge } from './components/StatusBadge'
 import { KaishuruButton } from './components/KaishuruButton'
 import KaishuruCard from './components/KaishuruCard'
+import KaishuruInput from './components/KaishuruInput'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -721,7 +722,7 @@ function AdminPage({ eventId, token }) {
           <form className="settings-edit-form settings-card" onSubmit={saveSettings}>
             <label className="field">
               <span>イベント名</span>
-              <input value={settingsForm.title} onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })} />
+              <KaishuruInput value={settingsForm.title} onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })} />
             </label>
             <label className="field">
               <span>日付</span>
