@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, Megaphone, Pencil, Search, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -449,19 +449,19 @@ function AdminPage({ eventId, token }) {
     <nav className="admin-bottom-nav" aria-label="幹事メニュー">
       <button className={`admin-bottom-nav__item ${activeAdminTab === 'dashboard' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('dashboard')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
+          <LayoutDashboard size={22} strokeWidth={2.4} />
         </span>
         <span>ダッシュボード</span>
       </button>
       <button className={`admin-bottom-nav__item ${activeAdminTab === 'members' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('members')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M7.5 12a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 7.5 12Zm9 0A3.5 3.5 0 1 0 13 8.5a3.5 3.5 0 0 0 3.5 3.5ZM2 20a5.5 5.5 0 0 1 11 0v1H2Zm9 1v-1a5.5 5.5 0 0 1 11 0v1Z"/></svg>
+          <Users size={22} strokeWidth={2.4} />
         </span>
         <span>参加者一覧</span>
       </button>
       <button className={`admin-bottom-nav__item ${activeAdminTab === 'settings' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('settings')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 8.7A3.3 3.3 0 1 0 15.3 12 3.3 3.3 0 0 0 12 8.7Zm9.7 4.1-1.9-.8a8.4 8.4 0 0 0-.5-1.3l1.1-1.7a1 1 0 0 0-.1-1.3l-1.5-1.5a1 1 0 0 0-1.3-.1l-1.7 1.1a8.4 8.4 0 0 0-1.3-.5l-.8-1.9a1 1 0 0 0-1-.6h-2.2a1 1 0 0 0-1 .6l-.8 1.9a8.4 8.4 0 0 0-1.3.5L6.8 5.9a1 1 0 0 0-1.3.1L4 7.5a1 1 0 0 0-.1 1.3L5 10.5a8.4 8.4 0 0 0-.5 1.3l-1.9.8a1 1 0 0 0-.6 1v2.2a1 1 0 0 0 .6 1l1.9.8a8.4 8.4 0 0 0 .5 1.3l-1.1 1.7A1 1 0 0 0 4 22l1.5 1.5a1 1 0 0 0 1.3.1l1.7-1.1a8.4 8.4 0 0 0 1.3.5l.8 1.9a1 1 0 0 0 1 .6h2.2a1 1 0 0 0 1-.6l.8-1.9a8.4 8.4 0 0 0 1.3-.5l1.7 1.1a1 1 0 0 0 1.3-.1L22 22a1 1 0 0 0 .1-1.3L21 19.1a8.4 8.4 0 0 0 .5-1.3l1.9-.8a1 1 0 0 0 .6-1v-2.2a1 1 0 0 0-.6-1Z"/></svg>
+          <Settings size={22} strokeWidth={2.4} />
         </span>
         <span>設定</span>
       </button>
