@@ -17,9 +17,9 @@ import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
 import { Button } from './components/ui/button'
 import { Card, CardContent } from './components/ui/card'
-import { Badge } from './components/ui/badge'
 import { Input } from './components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
+import { StatusBadge } from './components/StatusBadge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -524,9 +524,7 @@ function AdminPage({ eventId, token }) {
                 確認済みにする
               </button>
             ) : (
-              <Badge variant="secondary" className={`status-badge member-status-badge badge-${member.status}`}>
-                {statusLabel(member.status)}
-              </Badge>
+              <StatusBadge status={member.status} className="member-status-badge" />
             )}
           </span>
           <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
