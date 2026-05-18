@@ -606,7 +606,7 @@ function AdminPage({ eventId, token }) {
               <p className="sub">未払い者はいません</p>
             )}
             <div className="dashboard-line-inline">
-              <button
+              <Button
                 className="btn btn-line btn-lg line-reminder-button"
                 disabled={counts.unpaid === 0}
                 onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
@@ -616,7 +616,7 @@ function AdminPage({ eventId, token }) {
                   <span className="line-reminder-title">LINEで催促</span>
                   <span className="line-reminder-subtitle">未払い者にまとめてメッセージを送る</span>
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </>
