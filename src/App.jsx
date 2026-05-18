@@ -18,6 +18,7 @@ import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent,
 import { Button } from './components/ui/button'
 import { Card, CardContent } from './components/ui/card'
 import { Badge } from './components/ui/badge'
+import { Input } from './components/ui/input'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
 function AppHeader() {
@@ -629,7 +630,7 @@ function AdminPage({ eventId, token }) {
 
         <label className="member-search">
           <Search size={19} strokeWidth={2.4} aria-hidden="true" />
-          <input
+          <Input
             type="search"
             placeholder="名前で検索"
             value={memberSearchQuery}
