@@ -19,6 +19,16 @@ import { Button } from './components/ui/button'
 import { Card, CardContent } from './components/ui/card'
 import { Badge } from './components/ui/badge'
 import { Input } from './components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './components/ui/alert-dialog'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
 function AppHeader() {
@@ -270,6 +280,7 @@ function AdminPage({ eventId, token }) {
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
+  const [deleteTargetMember, setDeleteTargetMember] = useState(null)
   const [settingsEditing, setSettingsEditing] = useState(false)
   const [settingsForm, setSettingsForm] = useState({
     title: '',
@@ -375,15 +386,31 @@ function AdminPage({ eventId, token }) {
   }
 
   const remove = async (memberId) => {
-    if (!window.confirm('参加者を削除しますか？')) return
+    if (workingId === memberId) return false
     setWorkingId(memberId)
     try {
       await removeMember({ eventId, memberId })
+      return true
     } catch (err) {
       setError(err.message)
+      return false
     } finally {
       setWorkingId('')
     }
+  }
+
+  const deleteDialogBusy = Boolean(deleteTargetMember && workingId === deleteTargetMember.id)
+
+  const handleDeleteDialogOpenChange = (open) => {
+    if (open || deleteDialogBusy) return
+    setDeleteTargetMember(null)
+  }
+
+  const handleConfirmDelete = async (e) => {
+    e.preventDefault()
+    if (!deleteTargetMember || deleteDialogBusy) return
+    const removed = await remove(deleteTargetMember.id)
+    if (removed) setDeleteTargetMember(null)
   }
 
   const startSettingsEdit = () => {
@@ -514,7 +541,13 @@ function AdminPage({ eventId, token }) {
             {member.status === 'reported' && memberStatusFilter === 'reported' && (
               <button className="btn btn-confirm member-action-btn" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
             )}
-            <button className="btn btn-ghost-danger member-action-btn" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
+            <button
+              className="btn btn-ghost-danger member-action-btn"
+              disabled={workingId === member.id}
+              onClick={() => setDeleteTargetMember(member)}
+            >
+              削除
+            </button>
           </div>
         </div>
       </details>
@@ -748,6 +781,26 @@ function AdminPage({ eventId, token }) {
       )}
 
       {adminBottomNav}
+      <AlertDialog open={Boolean(deleteTargetMember)} onOpenChange={handleDeleteDialogOpenChange}>
+        <AlertDialogContent className="member-delete-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>参加者を削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。間違って参加した人や重複登録された人だけ削除してください。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteDialogBusy}>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              className="member-delete-dialog__action"
+              disabled={deleteDialogBusy}
+              onClick={handleConfirmDelete}
+            >
+              {deleteDialogBusy ? '削除中...' : '削除する'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   )
 }

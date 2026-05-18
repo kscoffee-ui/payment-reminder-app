@@ -699,6 +699,10 @@ textarea {
 .member-detail-grid b { color:#0f172a; font-size:.82rem; font-weight:700; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .member-row-actions { display:flex; gap:8px; flex-wrap:wrap; }
 .member-action-btn { min-height:38px; border-radius:10px; padding:7px 12px; font-size:.82rem; font-weight:700; }
+.member-delete-dialog { width:calc(100% - 32px); max-width:360px; border-radius:16px; background:#fff; color:#0f172a; box-shadow:0 18px 45px rgb(15 23 42 / 18%); }
+.member-delete-dialog__action { background:#dc2626; color:#fff; }
+.member-delete-dialog__action:hover { background:#b91c1c; }
+.member-delete-dialog__action:disabled { opacity:.55; cursor:default; }
 .member-empty { border:1px dashed #cbd5e1; border-radius:14px; padding:18px 12px; color:#64748b; background:#fff; text-align:center; font-size:.86rem; font-weight:600; }
 .settings-info-card { border:1px solid #dbeafe; border-radius:14px; overflow:hidden; background:#f8fbff; }
 .settings-info-card__head { background:#2563eb; color:#fff; padding:8px 12px; font-weight:700; font-size:.86rem; }
