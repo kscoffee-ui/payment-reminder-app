@@ -225,6 +225,16 @@ export async function removeMember({ eventId, memberId }) {
   await request(docUrl(`events/${eventId}/members/${memberId}`), { method: 'DELETE' })
 }
 
+export async function updateMemberStatus({ eventId, memberId, status }) {
+  await request(
+    `${docUrl(`events/${eventId}/members/${memberId}`)}&updateMask.fieldPaths=status&updateMask.fieldPaths=updatedAt`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(toDoc({ status, updatedAt: new Date().toISOString() })),
+    },
+  )
+}
+
 export async function updateEventInfo(eventId, payload) {
   const now = new Date().toISOString()
   await request(

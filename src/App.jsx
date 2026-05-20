@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronRight, Clock3, EllipsisVertical, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -12,6 +12,7 @@ import {
   subscribeMember,
   subscribeMembers,
   updateEventInfo,
+  updateMemberStatus,
 } from './lib/firestore'
 import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
@@ -266,6 +267,7 @@ function AdminPage({ eventId, token }) {
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
+  const [actionDrawerMember, setActionDrawerMember] = useState(null)
   const [settingsEditing, setSettingsEditing] = useState(false)
   const [settingsForm, setSettingsForm] = useState({
     title: '',
@@ -334,6 +336,20 @@ function AdminPage({ eventId, token }) {
     })
   }, [memberSearchQuery, memberStatusFilter, safeMembers])
 
+  const selectedActionDrawerMember = useMemo(() => {
+    if (!actionDrawerMember) return null
+    return safeMembers.find((member) => member.id === actionDrawerMember.id) || actionDrawerMember
+  }, [actionDrawerMember, safeMembers])
+
+  useEffect(() => {
+    if (!actionDrawerMember) return
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setActionDrawerMember(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [actionDrawerMember])
+
   const reminderMessage = useMemo(() => {
     if (!event) return ''
     return buildReminderMessage({
@@ -359,12 +375,14 @@ function AdminPage({ eventId, token }) {
   if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
   const confirm = async (memberId) => {
-    if (workingId === memberId) return
+    if (workingId === memberId) return false
     setWorkingId(memberId)
     try {
       await confirmPayment({ eventId, memberId })
+      return true
     } catch (err) {
       setError(err.message)
+      return false
     } finally {
       setWorkingId('')
     }
@@ -375,11 +393,48 @@ function AdminPage({ eventId, token }) {
     setWorkingId(memberId)
     try {
       await removeMember({ eventId, memberId })
+      return true
     } catch (err) {
       setError(err.message)
+      return false
     } finally {
       setWorkingId('')
     }
+  }
+
+  const updateMemberStatusTo = async (member, nextStatus) => {
+    if (!member || workingId === member.id) return false
+    setWorkingId(member.id)
+    try {
+      await updateMemberStatus({ eventId, memberId: member.id, status: nextStatus })
+      return true
+    } catch (err) {
+      setError(err.message)
+      return false
+    } finally {
+      setWorkingId('')
+    }
+  }
+
+  const runDrawerStatusAction = async (member) => {
+    if (!member) return
+
+    let succeeded = false
+    if (member.status === 'reported') {
+      succeeded = await confirm(member.id)
+    } else if (member.status === 'unpaid') {
+      succeeded = await updateMemberStatusTo(member, 'confirmed')
+    } else if (member.status === 'confirmed') {
+      succeeded = await updateMemberStatusTo(member, 'reported')
+    }
+
+    if (succeeded) setActionDrawerMember(null)
+  }
+
+  const removeFromDrawer = async (member) => {
+    if (!member) return
+    const succeeded = await remove(member.id)
+    if (succeeded) setActionDrawerMember(null)
   }
 
   const startSettingsEdit = () => {
@@ -470,50 +525,40 @@ function AdminPage({ eventId, token }) {
 
   const memberCard = (member) => (
     <li key={member.id} className={`member-list-item member-list-item--${member.status}`}>
-      <details className="member-list-details">
-        <summary className="member-list-row">
-          <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
-          <span className="member-row-main">
-            <span className="member-row-name">{member.name || '名前未設定'}</span>
-            <span className="member-row-updated">{formatUpdatedAt(member.updatedAt)}</span>
+      <div className="member-list-row">
+        <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+        <span className="member-row-main">
+          <span className="member-row-name">{member.name || '名前未設定'}</span>
+          <span className="member-row-updated">
+            {formatUpdatedAt(member.updatedAt)}
+            {member.proofMemo ? '・メモあり' : ''}
           </span>
-          <span className="member-row-status-actions">
-            {member.status === 'reported' && memberStatusFilter === 'reported' ? (
-              <button
-                type="button"
-                className="member-inline-confirm-button"
-                disabled={workingId === member.id}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  confirm(member.id)
-                }}
-              >
-                確認済みにする
-              </button>
-            ) : (
-              <span className={`status-badge member-status-badge badge-${member.status}`}>
-                {statusLabel(member.status)}
-              </span>
-            )}
-          </span>
-          <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
-        </summary>
-        <div className="member-row-detail">
-          <div className="member-detail-grid">
-            <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
-            <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod)}</b></p>
-            <p><span>状態</span><b>{statusLabel(member.status)}</b></p>
-            <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
-          </div>
-          <div className="member-row-actions">
-            {member.status === 'reported' && memberStatusFilter === 'reported' && (
-              <button className="btn btn-confirm member-action-btn" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
-            )}
-            <button className="btn btn-ghost-danger member-action-btn" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
-          </div>
-        </div>
-      </details>
+        </span>
+        <span className="member-row-status-actions">
+          {member.status === 'reported' && memberStatusFilter === 'reported' ? (
+            <button
+              type="button"
+              className="member-inline-confirm-button"
+              disabled={workingId === member.id}
+              onClick={() => confirm(member.id)}
+            >
+              確認済みにする
+            </button>
+          ) : (
+            <span className={`status-badge member-status-badge badge-${member.status}`}>
+              {statusLabel(member.status)}
+            </span>
+          )}
+        </span>
+        <button
+          type="button"
+          className="member-action-trigger"
+          aria-label={`${member.name || '参加者'}の操作を開く`}
+          onClick={() => setActionDrawerMember(member)}
+        >
+          <EllipsisVertical size={20} strokeWidth={2.4} aria-hidden="true" />
+        </button>
+      </div>
     </li>
   )
 
@@ -739,6 +784,74 @@ function AdminPage({ eventId, token }) {
           </div>
         </div>
       </section>
+      )}
+
+      {selectedActionDrawerMember && (
+        <div className="member-action-drawer-backdrop" onClick={() => setActionDrawerMember(null)}>
+          <section
+            className={`member-action-drawer member-action-drawer--${selectedActionDrawerMember.status}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="member-action-drawer-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="member-action-drawer__handle" aria-hidden="true" />
+            <div className="member-action-drawer__head">
+              <div>
+                <h2 id="member-action-drawer-title" className="member-action-drawer__name">
+                  {selectedActionDrawerMember.name || '名前未設定'}
+                </h2>
+                <span className={`status-badge member-action-drawer__status badge-${selectedActionDrawerMember.status}`}>
+                  {statusLabel(selectedActionDrawerMember.status)}
+                </span>
+              </div>
+              <button type="button" className="member-action-drawer__close" onClick={() => setActionDrawerMember(null)}>
+                閉じる
+              </button>
+            </div>
+
+            <div className="member-action-drawer__content">
+              <div className="member-action-drawer__detail-grid">
+                <p><span>名前</span><b>{selectedActionDrawerMember.name || '名前未設定'}</b></p>
+                <p><span>現在の状態</span><b>{statusLabel(selectedActionDrawerMember.status)}</b></p>
+                <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+                <p><span>支払い方法</span><b>{paymentLabel(selectedActionDrawerMember.paymentMethod)}</b></p>
+                <p><span>更新日時</span><b>{formatUpdatedAt(selectedActionDrawerMember.updatedAt)}</b></p>
+                <p className="member-action-drawer__detail-wide">
+                  <span>支払い報告メモ</span>
+                  <b>{selectedActionDrawerMember.proofMemo || 'なし'}</b>
+                </p>
+              </div>
+
+              <div className="member-action-drawer__section">
+                <h3>ステータス操作</h3>
+                <div className="member-action-drawer__actions">
+                  <button
+                    type="button"
+                    className="member-action-drawer__button member-action-drawer__button--primary"
+                    disabled={workingId === selectedActionDrawerMember.id}
+                    onClick={() => runDrawerStatusAction(selectedActionDrawerMember)}
+                  >
+                    {selectedActionDrawerMember.status === 'unpaid' && '受け取り済みにする'}
+                    {selectedActionDrawerMember.status === 'reported' && '確認済みにする'}
+                    {selectedActionDrawerMember.status === 'confirmed' && '確認待ちに戻す'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="member-action-drawer__section member-action-drawer__section--danger">
+                <button
+                  type="button"
+                  className="member-action-drawer__button member-action-drawer__button--danger"
+                  disabled={workingId === selectedActionDrawerMember.id}
+                  onClick={() => removeFromDrawer(selectedActionDrawerMember)}
+                >
+                  参加者を削除する
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       )}
 
       {adminBottomNav}
