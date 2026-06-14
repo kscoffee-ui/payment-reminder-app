@@ -221,6 +221,23 @@ export async function confirmPayment({ eventId, memberId }) {
   )
 }
 
+export async function returnReportToUnpaid({ eventId, memberId }) {
+  const member = await request(docUrl(`events/${eventId}/members/${memberId}`)).then(fromDoc)
+  if (member.status !== 'reported') throw new Error('確認待ちの参加者のみ未払いに戻せます。')
+
+  await request(
+    `${docUrl(`events/${eventId}/members/${memberId}`)}&updateMask.fieldPaths=status&updateMask.fieldPaths=proofMemo&updateMask.fieldPaths=updatedAt`,
+    {
+    method: 'PATCH',
+    body: JSON.stringify(toDoc({
+      status: 'unpaid',
+      proofMemo: '',
+      updatedAt: new Date().toISOString(),
+    })),
+    },
+  )
+}
+
 export async function removeMember({ eventId, memberId }) {
   await request(docUrl(`events/${eventId}/members/${memberId}`), { method: 'DELETE' })
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, MoreVertical, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -8,6 +8,7 @@ import {
   joinEvent,
   removeMember,
   reportPayment,
+  returnReportToUnpaid,
   subscribeEvent,
   subscribeMember,
   subscribeMembers,
@@ -266,6 +267,8 @@ function AdminPage({ eventId, token }) {
   const [workingId, setWorkingId] = useState('')
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
   const [activeReportMemberId, setActiveReportMemberId] = useState('')
+  const [openReportActionMemberId, setOpenReportActionMemberId] = useState('')
+  const [returnToUnpaidMember, setReturnToUnpaidMember] = useState(null)
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [settingsEditing, setSettingsEditing] = useState(false)
@@ -370,10 +373,48 @@ function AdminPage({ eventId, token }) {
     setWorkingId(memberId)
     try {
       await confirmPayment({ eventId, memberId })
+      const updatedAt = new Date().toISOString()
+      setMembers((currentMembers) => currentMembers.map((member) => (
+        member.id === memberId ? { ...member, status: 'confirmed', updatedAt } : member
+      )))
       return true
     } catch (err) {
       setError(err.message)
       return false
+    } finally {
+      setWorkingId('')
+    }
+  }
+
+  const confirmReportFromMenu = async (memberId) => {
+    const confirmed = await confirm(memberId)
+    if (confirmed) {
+      setOpenReportActionMemberId('')
+    }
+  }
+
+  const requestReturnToUnpaid = (member) => {
+    setOpenReportActionMemberId('')
+    setReturnToUnpaidMember(member)
+  }
+
+  const cancelReturnToUnpaid = () => {
+    if (returnToUnpaidMember && workingId === returnToUnpaidMember.id) return
+    setReturnToUnpaidMember(null)
+  }
+
+  const submitReturnToUnpaid = async () => {
+    if (!returnToUnpaidMember || workingId === returnToUnpaidMember.id) return
+    setWorkingId(returnToUnpaidMember.id)
+    try {
+      await returnReportToUnpaid({ eventId, memberId: returnToUnpaidMember.id })
+      const updatedAt = new Date().toISOString()
+      setMembers((currentMembers) => currentMembers.map((member) => (
+        member.id === returnToUnpaidMember.id ? { ...member, status: 'unpaid', proofMemo: '', updatedAt } : member
+      )))
+      setReturnToUnpaidMember(null)
+    } catch (err) {
+      setError(err.message)
     } finally {
       setWorkingId('')
     }
@@ -417,16 +458,19 @@ function AdminPage({ eventId, token }) {
   }
 
   const openReportsInbox = () => {
+    setOpenReportActionMemberId('')
     setActiveReportMemberId('')
     setActiveAdminTab('reportsInbox')
   }
 
   const openReportDetail = (memberId) => {
+    setOpenReportActionMemberId('')
     setActiveReportMemberId(memberId)
     setActiveAdminTab('reportDetail')
   }
 
   const backToReportsInbox = () => {
+    setOpenReportActionMemberId('')
     setActiveReportMemberId('')
     setActiveAdminTab('reportsInbox')
   }
@@ -668,7 +712,15 @@ function AdminPage({ eventId, token }) {
       {activeAdminTab === 'reportsInbox' && (
       <section className="reports-inbox-screen">
         <div className="reports-screen-header">
-          <button type="button" className="reports-back-button" aria-label="ダッシュボードへ戻る" onClick={() => setActiveAdminTab('dashboard')}>
+          <button
+            type="button"
+            className="reports-back-button"
+            aria-label="ダッシュボードへ戻る"
+            onClick={() => {
+              setOpenReportActionMemberId('')
+              setActiveAdminTab('dashboard')
+            }}
+          >
             <ArrowLeft size={21} strokeWidth={2.4} aria-hidden="true" />
           </button>
           <div className="reports-screen-title">
@@ -679,21 +731,65 @@ function AdminPage({ eventId, token }) {
         </div>
 
         {counts.reportedMembers.length > 0 ? (
-          <ul className="reports-inbox-list">
-            {counts.reportedMembers.map((member) => (
-              <li key={member.id} className="reports-inbox-item">
-                <button type="button" className="reports-inbox-button" onClick={() => openReportDetail(member.id)}>
-                  <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
-                  <span className="reports-member-main">
-                    <span className="reports-member-name">{member.name || '名前未設定'}</span>
-                    <span className="reports-member-meta">{formatUpdatedAt(member.updatedAt)}</span>
-                  </span>
-                  <span className="status-badge badge-reported">確認待ち</span>
-                  <ChevronRight size={18} className="reports-inbox-chevron" aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            {openReportActionMemberId && (
+              <button type="button" className="report-action-backdrop" aria-label="操作メニューを閉じる" onClick={() => setOpenReportActionMemberId('')} />
+            )}
+            <ul className="reports-inbox-list">
+              {counts.reportedMembers.map((member) => (
+                <li key={member.id} className="reports-inbox-item">
+                  <div className={`reports-inbox-button ${openReportActionMemberId === member.id ? 'reports-inbox-button--menu-open' : ''}`}>
+                    <button type="button" className="reports-inbox-main" onClick={() => openReportDetail(member.id)} disabled={workingId === member.id}>
+                      <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+                      <span className="reports-member-main">
+                        <span className="reports-member-name">{member.name || '名前未設定'}</span>
+                        <span className="reports-member-meta">{formatUpdatedAt(member.updatedAt)}</span>
+                      </span>
+                      <span className="status-badge badge-reported">確認待ち</span>
+                    </button>
+                    <div className="reports-action-wrap">
+                      <button
+                        type="button"
+                        className="reports-action-trigger"
+                        aria-label={`${member.name || '名前未設定'}の操作`}
+                        aria-haspopup="menu"
+                        aria-expanded={openReportActionMemberId === member.id}
+                        disabled={workingId === member.id}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setOpenReportActionMemberId((current) => (current === member.id ? '' : member.id))
+                        }}
+                      >
+                        <MoreVertical size={20} strokeWidth={2.4} aria-hidden="true" />
+                      </button>
+                      {openReportActionMemberId === member.id && (
+                        <div className="reports-action-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="reports-action-menu__item"
+                            role="menuitem"
+                            disabled={workingId === member.id}
+                            onClick={() => confirmReportFromMenu(member.id)}
+                          >
+                            確認済みにする
+                          </button>
+                          <button
+                            type="button"
+                            className="reports-action-menu__item reports-action-menu__item--danger"
+                            role="menuitem"
+                            disabled={workingId === member.id}
+                            onClick={() => requestReturnToUnpaid(member)}
+                          >
+                            未払いに戻す
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         ) : (
           <div className="card reports-empty-card">
             <CheckCircle2 size={28} strokeWidth={2.2} aria-hidden="true" />
@@ -885,6 +981,28 @@ function AdminPage({ eventId, token }) {
           </div>
         </div>
       </section>
+      )}
+
+      {returnToUnpaidMember && (
+        <div className="report-return-sheet" role="dialog" aria-modal="true" aria-labelledby="report-return-title">
+          <button type="button" className="report-return-sheet__backdrop" aria-label="未払い戻し確認を閉じる" onClick={cancelReturnToUnpaid} />
+          <div className="report-return-sheet__panel">
+            <div className="report-return-sheet__body">
+              <p className="report-return-sheet__eyebrow">{returnToUnpaidMember.name || '名前未設定'}</p>
+              <h2 id="report-return-title">未払いに戻しますか？</h2>
+              <p>この人の支払い報告を取り消して、未払い状態に戻します。</p>
+              <p>必要であれば、もう一度支払い報告してもらってください。</p>
+            </div>
+            <div className="report-return-sheet__actions">
+              <button type="button" className="btn btn-secondary btn-lg" onClick={cancelReturnToUnpaid} disabled={workingId === returnToUnpaidMember.id}>
+                キャンセル
+              </button>
+              <button type="button" className="btn btn-danger btn-lg" onClick={submitReturnToUnpaid} disabled={workingId === returnToUnpaidMember.id}>
+                {workingId === returnToUnpaidMember.id ? '更新中...' : '未払いに戻す'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {adminBottomNav}
