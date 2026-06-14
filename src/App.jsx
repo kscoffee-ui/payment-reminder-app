@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -264,6 +264,7 @@ function AdminPage({ eventId, token }) {
   const [error, setError] = useState('')
   const [workingId, setWorkingId] = useState('')
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
+  const [activeReportMemberId, setActiveReportMemberId] = useState('')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [settingsEditing, setSettingsEditing] = useState(false)
@@ -334,6 +335,11 @@ function AdminPage({ eventId, token }) {
     })
   }, [memberSearchQuery, memberStatusFilter, safeMembers])
 
+  const activeReportMember = useMemo(
+    () => safeMembers.find((member) => member.id === activeReportMemberId) || null,
+    [activeReportMemberId, safeMembers],
+  )
+
   const reminderMessage = useMemo(() => {
     if (!event) return ''
     return buildReminderMessage({
@@ -359,12 +365,14 @@ function AdminPage({ eventId, token }) {
   if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
   const confirm = async (memberId) => {
-    if (workingId === memberId) return
+    if (workingId === memberId) return false
     setWorkingId(memberId)
     try {
       await confirmPayment({ eventId, memberId })
+      return true
     } catch (err) {
       setError(err.message)
+      return false
     } finally {
       setWorkingId('')
     }
@@ -407,6 +415,30 @@ function AdminPage({ eventId, token }) {
     setActiveAdminTab('members')
   }
 
+  const openReportsInbox = () => {
+    setActiveReportMemberId('')
+    setActiveAdminTab('reportsInbox')
+  }
+
+  const openReportDetail = (memberId) => {
+    setActiveReportMemberId(memberId)
+    setActiveAdminTab('reportDetail')
+  }
+
+  const backToReportsInbox = () => {
+    setActiveReportMemberId('')
+    setActiveAdminTab('reportsInbox')
+  }
+
+  const confirmActiveReport = async () => {
+    if (!activeReportMember || activeReportMember.status !== 'reported') return
+    const confirmed = await confirm(activeReportMember.id)
+    if (confirmed) {
+      setActiveReportMemberId('')
+      setActiveAdminTab('reportsInbox')
+    }
+  }
+
   const cancelSettingsEdit = () => {
     if (settingsSaving) return
     setSettingsError('')
@@ -447,7 +479,7 @@ function AdminPage({ eventId, token }) {
 
   const adminBottomNav = (
     <nav className="admin-bottom-nav" aria-label="幹事メニュー">
-      <button className={`admin-bottom-nav__item ${activeAdminTab === 'dashboard' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('dashboard')}>
+      <button className={`admin-bottom-nav__item ${['dashboard', 'reportsInbox', 'reportDetail'].includes(activeAdminTab) ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('dashboard')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
           <LayoutDashboard size={22} strokeWidth={2.4} />
         </span>
@@ -522,6 +554,24 @@ function AdminPage({ eventId, token }) {
       <AppHeader />
       {activeAdminTab === 'dashboard' && (
         <>
+          <section className="admin-dashboard-toolbar" aria-label="幹事ダッシュボード操作">
+            <div>
+              <p className="admin-dashboard-eyebrow">幹事ダッシュボード</p>
+              <h1 className="admin-dashboard-title">回収状況</h1>
+            </div>
+            <button
+              type="button"
+              className="reports-bell-button"
+              aria-label={`確認待ち ${counts.reportedMembers.length}件`}
+              onClick={openReportsInbox}
+            >
+              <Bell size={22} strokeWidth={2.4} aria-hidden="true" />
+              {counts.reportedMembers.length > 0 && (
+                <span className="reports-bell-badge">{counts.reportedMembers.length}</span>
+              )}
+            </button>
+          </section>
+
           <section className="card admin-event-card">
             <div className="admin-event-card__icon" aria-hidden="true">
               <Calendar size={22} strokeWidth={2} />
@@ -616,6 +666,105 @@ function AdminPage({ eventId, token }) {
             </div>
           </section>
         </>
+      )}
+
+      {activeAdminTab === 'reportsInbox' && (
+      <section className="reports-inbox-screen">
+        <div className="reports-screen-header">
+          <button type="button" className="reports-back-button" aria-label="ダッシュボードへ戻る" onClick={() => setActiveAdminTab('dashboard')}>
+            <ArrowLeft size={21} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+          <div className="reports-screen-title">
+            <p>確認待ち</p>
+            <h1>支払い報告</h1>
+          </div>
+          <span className="reports-count-chip">{counts.reportedMembers.length}件</span>
+        </div>
+
+        {counts.reportedMembers.length > 0 ? (
+          <ul className="reports-inbox-list">
+            {counts.reportedMembers.map((member) => (
+              <li key={member.id} className="reports-inbox-item">
+                <button type="button" className="reports-inbox-button" onClick={() => openReportDetail(member.id)}>
+                  <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+                  <span className="reports-member-main">
+                    <span className="reports-member-name">{member.name || '名前未設定'}</span>
+                    <span className="reports-member-meta">{formatUpdatedAt(member.updatedAt)}</span>
+                  </span>
+                  <span className="status-badge badge-reported">確認待ち</span>
+                  <ChevronRight size={18} className="reports-inbox-chevron" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="card reports-empty-card">
+            <CheckCircle2 size={28} strokeWidth={2.2} aria-hidden="true" />
+            <p>確認待ちの報告はありません。</p>
+          </div>
+        )}
+      </section>
+      )}
+
+      {activeAdminTab === 'reportDetail' && (
+      <section className="report-detail-screen">
+        <div className="reports-screen-header">
+          <button type="button" className="reports-back-button" aria-label="確認待ちボックスへ戻る" onClick={backToReportsInbox}>
+            <ArrowLeft size={21} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+          <div className="reports-screen-title">
+            <p>報告詳細</p>
+            <h1>支払い確認</h1>
+          </div>
+        </div>
+
+        {!activeReportMember ? (
+          <div className="card report-detail-card report-detail-processed">
+            <h2>対象が見つかりません</h2>
+            <p className="sub">確認待ちボックスに戻って、最新の報告を確認してください。</p>
+            <button type="button" className="btn btn-secondary btn-lg" onClick={backToReportsInbox}>確認待ちボックスへ戻る</button>
+          </div>
+        ) : activeReportMember.status !== 'reported' ? (
+          <div className="card report-detail-card report-detail-processed">
+            <span className={`status-badge report-detail-status badge-${activeReportMember.status}`}>
+              {statusLabel(activeReportMember.status)}
+            </span>
+            <h2>すでに処理済み</h2>
+            <p className="sub">{activeReportMember.name || '名前未設定'} さんの報告は現在「{statusLabel(activeReportMember.status)}」です。</p>
+            <button type="button" className="btn btn-secondary btn-lg" onClick={backToReportsInbox}>確認待ちボックスへ戻る</button>
+          </div>
+        ) : (
+          <div className="card report-detail-card">
+            <div className="report-detail-profile">
+              <span className="reports-member-avatar reports-member-avatar--large" aria-hidden="true">{activeReportMember.name?.slice(0, 1) || '?'}</span>
+              <div>
+                <h2>{activeReportMember.name || '名前未設定'}</h2>
+                <p className="sub">{formatUpdatedAt(activeReportMember.updatedAt)}</p>
+              </div>
+              <span className="status-badge report-detail-status badge-reported">確認待ち</span>
+            </div>
+
+            <div className="report-detail-grid">
+              <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+              <p><span>支払い方法</span><b>{paymentLabel(activeReportMember.paymentMethod)}</b></p>
+            </div>
+
+            <div className="report-detail-memo">
+              <span>報告メモ</span>
+              <p>{activeReportMember.proofMemo || 'なし'}</p>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-confirm btn-lg report-confirm-button"
+              disabled={workingId === activeReportMember.id}
+              onClick={confirmActiveReport}
+            >
+              {workingId === activeReportMember.id ? '更新中...' : '確認済みにする'}
+            </button>
+          </div>
+        )}
+      </section>
       )}
 
       {activeAdminTab === 'members' && (
