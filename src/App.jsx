@@ -560,7 +560,7 @@ function AdminPage({ eventId, token }) {
             aria-label={`確認待ち ${counts.reportedMembers.length}件`}
             onClick={openReportsInbox}
           >
-            <Bell size={22} strokeWidth={2.4} aria-hidden="true" />
+            <Bell size={25} strokeWidth={2.3} aria-hidden="true" />
             {counts.reportedMembers.length > 0 && (
               <span className="reports-bell-badge">{counts.reportedMembers.length}</span>
             )}
