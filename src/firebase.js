@@ -3,7 +3,7 @@ const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID
 
 export function assertFirebaseConfig() {
   if (!apiKey || !projectId) {
-    throw new Error('Firebase設定値が不足しています。.env を設定してください。')
+    throw new Error('Firebase設定値が不足しています。.envlocal を設定してください。')
   }
 }
 
