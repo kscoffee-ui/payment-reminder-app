@@ -17,10 +17,11 @@ import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
-function AppHeader() {
+function AppHeader({ children }) {
   return (
     <header className="app-header">
       <img src={kaishuruLogo} alt="カイシュル" className="app-logo" />
+      {children && <div className="app-header__action">{children}</div>}
     </header>
   )
 }
@@ -558,27 +559,23 @@ function AdminPage({ eventId, token }) {
 
   return (
     <main className="container admin-shell">
-      <AppHeader />
+      <AppHeader>
+        {activeAdminTab === 'dashboard' && (
+          <button
+            type="button"
+            className="reports-bell-button"
+            aria-label={`確認待ち ${counts.reportedMembers.length}件`}
+            onClick={openReportsInbox}
+          >
+            <Bell size={22} strokeWidth={2.4} aria-hidden="true" />
+            {counts.reportedMembers.length > 0 && (
+              <span className="reports-bell-badge">{counts.reportedMembers.length}</span>
+            )}
+          </button>
+        )}
+      </AppHeader>
       {activeAdminTab === 'dashboard' && (
         <>
-          <section className="admin-dashboard-toolbar" aria-label="幹事ダッシュボード操作">
-            <div>
-              <p className="admin-dashboard-eyebrow">幹事ダッシュボード</p>
-              <h1 className="admin-dashboard-title">回収状況</h1>
-            </div>
-            <button
-              type="button"
-              className="reports-bell-button"
-              aria-label={`確認待ち ${counts.reportedMembers.length}件`}
-              onClick={openReportsInbox}
-            >
-              <Bell size={22} strokeWidth={2.4} aria-hidden="true" />
-              {counts.reportedMembers.length > 0 && (
-                <span className="reports-bell-badge">{counts.reportedMembers.length}</span>
-              )}
-            </button>
-          </section>
-
           <section className="card admin-event-card">
             <div className="admin-event-card__icon" aria-hidden="true">
               <Calendar size={22} strokeWidth={2} />
