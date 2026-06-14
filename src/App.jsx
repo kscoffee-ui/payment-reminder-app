@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, MoreVertical, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, Info, JapaneseYen, LayoutDashboard, Megaphone, MoreVertical, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -69,6 +69,13 @@ function formatUpdatedAt(value) {
   const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value)
   if (Number.isNaN(date.getTime())) return `更新: ${value}`
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} 更新`
+}
+
+function formatReportedAt(value) {
+  if (!value) return '報告日時なし'
+  const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value)
+  if (Number.isNaN(date.getTime())) return `報告: ${value}`
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} 報告`
 }
 
 function hasVisibleMemo(value) {
@@ -718,23 +725,24 @@ function AdminPage({ eventId, token }) {
 
       {activeAdminTab === 'reportsInbox' && (
       <section className="reports-inbox-screen">
-        <div className="reports-screen-header">
+        <div className="reports-ios-header">
           <button
             type="button"
-            className="reports-back-button"
+            className="reports-ios-back-button"
             aria-label="ダッシュボードへ戻る"
             onClick={() => {
               setOpenReportActionMemberId('')
               setActiveAdminTab('dashboard')
             }}
           >
-            <ArrowLeft size={21} strokeWidth={2.4} aria-hidden="true" />
+            <ArrowLeft size={19} strokeWidth={2.5} aria-hidden="true" />
+            <span>戻る</span>
           </button>
-          <div className="reports-screen-title">
-            <p>確認待ち</p>
-            <h1>支払い報告</h1>
+          <div className="reports-ios-title-row">
+            <h1>確認待ち一覧</h1>
+            <span className="reports-count-chip">{counts.reportedMembers.length}人</span>
           </div>
-          <span className="reports-count-chip">{counts.reportedMembers.length}件</span>
+          <p className="reports-ios-lead">支払い報告が届いています。内容を確認して「確認済み」にしてください。</p>
         </div>
 
         {counts.reportedMembers.length > 0 ? (
@@ -750,9 +758,13 @@ function AdminPage({ eventId, token }) {
                       <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
                       <span className="reports-member-main">
                         <span className="reports-member-name">{member.name || '名前未設定'}</span>
-                        <span className="reports-member-meta">{formatUpdatedAt(member.updatedAt)}</span>
+                        <span className="reports-member-meta">{formatReportedAt(member.updatedAt)}</span>
                       </span>
-                      <span className="status-badge badge-reported">確認待ち</span>
+                      <span className="reports-member-payment">
+                        <span>{paymentLabel(member.paymentMethod)}</span>
+                        <span>{hasVisibleMemo(member.proofMemo) ? 'メモあり' : '-'}</span>
+                      </span>
+                      <span className="status-badge badge-reported reports-status-badge">確認待ち</span>
                     </button>
                     <div className="reports-action-wrap">
                       <button
@@ -803,6 +815,14 @@ function AdminPage({ eventId, token }) {
             <p>確認待ちの報告はありません。</p>
           </div>
         )}
+
+        <div className="reports-helper-card">
+          <div className="reports-helper-title">
+            <Info size={17} strokeWidth={2.4} aria-hidden="true" />
+            <span>確認のポイント</span>
+          </div>
+          <p>支払い方法・金額・メモを確認して、内容に問題がなければ「確認済み」にしてください。</p>
+        </div>
       </section>
       )}
 
