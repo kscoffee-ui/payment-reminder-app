@@ -692,7 +692,7 @@ textarea {
   justify-content: center;
   align-items: center;
   position: relative;
-  min-height: 42px;
+  min-height: 44px;
   padding: 4px 0 0;
 }
 
@@ -713,11 +713,11 @@ textarea {
 
 .reports-bell-button {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border: 0;
   border-radius: 999px;
-  background: rgb(255 255 255 / 70%);
+  background: transparent;
   color: #0f172a;
   display: inline-flex;
   align-items: center;
@@ -733,10 +733,10 @@ textarea {
 
 .reports-bell-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  min-width: 18px;
-  height: 18px;
+  top: 0;
+  right: 0;
+  min-width: 20px;
+  height: 20px;
   padding: 0 5px;
   border: 2px solid #fff;
   border-radius: 999px;
@@ -745,7 +745,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 800;
   line-height: 1;
 }
