@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, Bell, Calendar, Check, CheckCircle2, ChevronRight, Clock3, FileText, Info, JapaneseYen, LayoutDashboard, Megaphone, MoreVertical, Pencil, Search, Settings, Share2, SlidersHorizontal, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
   confirmPayment,
@@ -8,6 +8,7 @@ import {
   joinEvent,
   removeMember,
   reportPayment,
+  returnReportToUnpaid,
   subscribeEvent,
   subscribeMember,
   subscribeMembers,
@@ -68,6 +69,19 @@ function formatUpdatedAt(value) {
   const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value)
   if (Number.isNaN(date.getTime())) return `更新: ${value}`
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} 更新`
+}
+
+function formatReportedAt(value) {
+  if (!value) return '報告日時なし'
+  const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value)
+  if (Number.isNaN(date.getTime())) return `報告: ${value}`
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} 報告`
+}
+
+function dateTimeValue(value) {
+  const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value)
+  const time = date.getTime()
+  return Number.isNaN(time) ? 0 : time
 }
 
 function hasVisibleMemo(value) {
@@ -266,6 +280,13 @@ function AdminPage({ eventId, token }) {
   const [workingId, setWorkingId] = useState('')
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
   const [activeReportMemberId, setActiveReportMemberId] = useState('')
+  const [openReportActionMemberId, setOpenReportActionMemberId] = useState('')
+  const [returnToUnpaidMember, setReturnToUnpaidMember] = useState(null)
+  const [reportsSearchQuery, setReportsSearchQuery] = useState('')
+  const [reportsSortMode, setReportsSortMode] = useState('newest')
+  const [reportsSortOpen, setReportsSortOpen] = useState(false)
+  const [confirmAllOpen, setConfirmAllOpen] = useState(false)
+  const [bulkWorking, setBulkWorking] = useState(false)
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [settingsEditing, setSettingsEditing] = useState(false)
@@ -341,6 +362,20 @@ function AdminPage({ eventId, token }) {
     [activeReportMemberId, safeMembers],
   )
 
+  const visibleReportedMembers = useMemo(() => {
+    const query = reportsSearchQuery.trim().toLowerCase()
+    const filtered = counts.reportedMembers.filter((member) => {
+      if (!query) return true
+      return String(member.name || '').toLowerCase().includes(query)
+    })
+    return [...filtered].sort((a, b) => {
+      if (reportsSortMode === 'name') {
+        return String(a.name || '').localeCompare(String(b.name || ''), 'ja')
+      }
+      return dateTimeValue(b.updatedAt) - dateTimeValue(a.updatedAt)
+    })
+  }, [counts.reportedMembers, reportsSearchQuery, reportsSortMode])
+
   const reminderMessage = useMemo(() => {
     if (!event) return ''
     return buildReminderMessage({
@@ -370,12 +405,70 @@ function AdminPage({ eventId, token }) {
     setWorkingId(memberId)
     try {
       await confirmPayment({ eventId, memberId })
+      const updatedAt = new Date().toISOString()
+      setMembers((currentMembers) => currentMembers.map((member) => (
+        member.id === memberId ? { ...member, status: 'confirmed', updatedAt } : member
+      )))
       return true
     } catch (err) {
       setError(err.message)
       return false
     } finally {
       setWorkingId('')
+    }
+  }
+
+  const confirmReportFromMenu = async (memberId) => {
+    const confirmed = await confirm(memberId)
+    if (confirmed) {
+      setOpenReportActionMemberId('')
+    }
+  }
+
+  const requestReturnToUnpaid = (member) => {
+    setOpenReportActionMemberId('')
+    setReturnToUnpaidMember(member)
+  }
+
+  const cancelReturnToUnpaid = () => {
+    if (returnToUnpaidMember && workingId === returnToUnpaidMember.id) return
+    setReturnToUnpaidMember(null)
+  }
+
+  const submitReturnToUnpaid = async () => {
+    if (!returnToUnpaidMember || workingId === returnToUnpaidMember.id) return
+    setWorkingId(returnToUnpaidMember.id)
+    try {
+      await returnReportToUnpaid({ eventId, memberId: returnToUnpaidMember.id })
+      const updatedAt = new Date().toISOString()
+      setMembers((currentMembers) => currentMembers.map((member) => (
+        member.id === returnToUnpaidMember.id ? { ...member, status: 'unpaid', proofMemo: '', updatedAt } : member
+      )))
+      setReturnToUnpaidMember(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setWorkingId('')
+    }
+  }
+
+  const cancelConfirmAll = () => {
+    if (bulkWorking) return
+    setConfirmAllOpen(false)
+  }
+
+  const submitConfirmAll = async () => {
+    if (bulkWorking || visibleReportedMembers.length === 0) return
+    setBulkWorking(true)
+    try {
+      const targets = visibleReportedMembers
+      for (const member of targets) {
+        const confirmed = await confirm(member.id)
+        if (!confirmed) return
+      }
+      setConfirmAllOpen(false)
+    } finally {
+      setBulkWorking(false)
     }
   }
 
@@ -417,16 +510,22 @@ function AdminPage({ eventId, token }) {
   }
 
   const openReportsInbox = () => {
+    setOpenReportActionMemberId('')
+    setReportsSortOpen(false)
     setActiveReportMemberId('')
     setActiveAdminTab('reportsInbox')
   }
 
   const openReportDetail = (memberId) => {
+    setOpenReportActionMemberId('')
+    setReportsSortOpen(false)
     setActiveReportMemberId(memberId)
     setActiveAdminTab('reportDetail')
   }
 
   const backToReportsInbox = () => {
+    setOpenReportActionMemberId('')
+    setReportsSortOpen(false)
     setActiveReportMemberId('')
     setActiveAdminTab('reportsInbox')
   }
@@ -667,39 +766,187 @@ function AdminPage({ eventId, token }) {
 
       {activeAdminTab === 'reportsInbox' && (
       <section className="reports-inbox-screen">
-        <div className="reports-screen-header">
-          <button type="button" className="reports-back-button" aria-label="ダッシュボードへ戻る" onClick={() => setActiveAdminTab('dashboard')}>
-            <ArrowLeft size={21} strokeWidth={2.4} aria-hidden="true" />
+        <div className="reports-ios-header">
+          <button
+            type="button"
+            className="reports-ios-back-button"
+            aria-label="ダッシュボードへ戻る"
+            onClick={() => {
+              setOpenReportActionMemberId('')
+              setReportsSortOpen(false)
+              setActiveAdminTab('dashboard')
+            }}
+          >
+            <ArrowLeft size={19} strokeWidth={2.5} aria-hidden="true" />
+            <span>戻る</span>
           </button>
-          <div className="reports-screen-title">
-            <p>確認待ち</p>
-            <h1>支払い報告</h1>
+          <div className="reports-ios-title-row">
+            <h1>確認待ち一覧</h1>
+            <span className="reports-count-chip">{counts.reportedMembers.length}人</span>
           </div>
-          <span className="reports-count-chip">{counts.reportedMembers.length}件</span>
+          <p className="reports-ios-lead">支払い報告が届いています。内容を確認して「確認済み」にしてください。</p>
+        </div>
+
+        <div className="reports-filter-row">
+          <label className="reports-search-field">
+            <Search size={18} strokeWidth={2.4} aria-hidden="true" />
+            <input
+              type="search"
+              placeholder="名前で検索"
+              value={reportsSearchQuery}
+              onChange={(event) => {
+                setReportsSearchQuery(event.target.value)
+                setOpenReportActionMemberId('')
+                setReportsSortOpen(false)
+              }}
+            />
+          </label>
+          <div className="reports-sort-wrap">
+            {reportsSortOpen && (
+              <button type="button" className="reports-sort-backdrop" aria-label="並び替えメニューを閉じる" onClick={() => setReportsSortOpen(false)} />
+            )}
+            <button
+              type="button"
+              className="reports-sort-button"
+              aria-haspopup="menu"
+              aria-expanded={reportsSortOpen}
+              onClick={() => {
+                setOpenReportActionMemberId('')
+                setReportsSortOpen((current) => !current)
+              }}
+            >
+              <SlidersHorizontal size={17} strokeWidth={2.4} aria-hidden="true" />
+              <span>並び替え</span>
+            </button>
+            {reportsSortOpen && (
+              <div className="reports-sort-menu" role="menu">
+                <button
+                  type="button"
+                  className={`reports-sort-menu__item ${reportsSortMode === 'newest' ? 'reports-sort-menu__item--active' : ''}`}
+                  role="menuitem"
+                  onClick={() => {
+                    setReportsSortMode('newest')
+                    setReportsSortOpen(false)
+                  }}
+                >
+                  報告が新しい順
+                </button>
+                <button
+                  type="button"
+                  className={`reports-sort-menu__item ${reportsSortMode === 'name' ? 'reports-sort-menu__item--active' : ''}`}
+                  role="menuitem"
+                  onClick={() => {
+                    setReportsSortMode('name')
+                    setReportsSortOpen(false)
+                  }}
+                >
+                  名前順
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {counts.reportedMembers.length > 0 ? (
-          <ul className="reports-inbox-list">
-            {counts.reportedMembers.map((member) => (
-              <li key={member.id} className="reports-inbox-item">
-                <button type="button" className="reports-inbox-button" onClick={() => openReportDetail(member.id)}>
-                  <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
-                  <span className="reports-member-main">
-                    <span className="reports-member-name">{member.name || '名前未設定'}</span>
-                    <span className="reports-member-meta">{formatUpdatedAt(member.updatedAt)}</span>
-                  </span>
-                  <span className="status-badge badge-reported">確認待ち</span>
-                  <ChevronRight size={18} className="reports-inbox-chevron" aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            {openReportActionMemberId && (
+              <button type="button" className="report-action-backdrop" aria-label="操作メニューを閉じる" onClick={() => setOpenReportActionMemberId('')} />
+            )}
+            {visibleReportedMembers.length > 0 ? (
+              <ul className="reports-inbox-list">
+              {visibleReportedMembers.map((member) => (
+                <li key={member.id} className="reports-inbox-item">
+                  <div className={`reports-inbox-button ${openReportActionMemberId === member.id ? 'reports-inbox-button--menu-open' : ''}`}>
+                    <button type="button" className="reports-inbox-main" onClick={() => openReportDetail(member.id)} disabled={workingId === member.id || bulkWorking}>
+                      <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+                      <span className="reports-member-main">
+                        <span className="reports-member-name">{member.name || '名前未設定'}</span>
+                        <span className="reports-member-meta">{formatReportedAt(member.updatedAt)}</span>
+                      </span>
+                      <span className="reports-member-payment">
+                        <span>{paymentLabel(member.paymentMethod)}</span>
+                        <span>{hasVisibleMemo(member.proofMemo) ? 'メモあり' : '-'}</span>
+                      </span>
+                      <span className="status-badge badge-reported reports-status-badge">確認待ち</span>
+                    </button>
+                    <div className="reports-action-wrap">
+                      <button
+                        type="button"
+                        className="reports-action-trigger"
+                        aria-label={`${member.name || '名前未設定'}の操作`}
+                        aria-haspopup="menu"
+                        aria-expanded={openReportActionMemberId === member.id}
+                        disabled={workingId === member.id || bulkWorking}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setReportsSortOpen(false)
+                          setOpenReportActionMemberId((current) => (current === member.id ? '' : member.id))
+                        }}
+                      >
+                        <MoreVertical size={20} strokeWidth={2.4} aria-hidden="true" />
+                      </button>
+                      {openReportActionMemberId === member.id && (
+                        <div className="reports-action-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="reports-action-menu__item"
+                            role="menuitem"
+                            disabled={workingId === member.id || bulkWorking}
+                            onClick={() => confirmReportFromMenu(member.id)}
+                          >
+                            確認済みにする
+                          </button>
+                          <button
+                            type="button"
+                            className="reports-action-menu__item reports-action-menu__item--danger"
+                            role="menuitem"
+                            disabled={workingId === member.id || bulkWorking}
+                            onClick={() => requestReturnToUnpaid(member)}
+                          >
+                            未払いに戻す
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            ) : (
+              <div className="card reports-empty-card reports-empty-card--search">
+                <Search size={27} strokeWidth={2.2} aria-hidden="true" />
+                <p>該当する確認待ちはありません。</p>
+              </div>
+            )}
+          </>
         ) : (
           <div className="card reports-empty-card">
             <CheckCircle2 size={28} strokeWidth={2.2} aria-hidden="true" />
             <p>確認待ちの報告はありません。</p>
           </div>
         )}
+
+        <div className="reports-helper-card">
+          <div className="reports-helper-title">
+            <Info size={17} strokeWidth={2.4} aria-hidden="true" />
+            <span>確認のポイント</span>
+          </div>
+          <p>支払い方法・金額・メモを確認して、内容に問題がなければ「確認済み」にしてください。</p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-lg reports-bulk-confirm-button"
+          disabled={visibleReportedMembers.length === 0 || bulkWorking}
+          onClick={() => {
+            setOpenReportActionMemberId('')
+            setReportsSortOpen(false)
+            setConfirmAllOpen(true)
+          }}
+        >
+          <Check size={20} strokeWidth={2.5} aria-hidden="true" />
+          {bulkWorking ? '更新中...' : 'すべて確認済みにする'}
+        </button>
       </section>
       )}
 
@@ -885,6 +1132,49 @@ function AdminPage({ eventId, token }) {
           </div>
         </div>
       </section>
+      )}
+
+      {returnToUnpaidMember && (
+        <div className="report-return-sheet" role="dialog" aria-modal="true" aria-labelledby="report-return-title">
+          <button type="button" className="report-return-sheet__backdrop" aria-label="未払い戻し確認を閉じる" onClick={cancelReturnToUnpaid} />
+          <div className="report-return-sheet__panel">
+            <div className="report-return-sheet__body">
+              <p className="report-return-sheet__eyebrow">{returnToUnpaidMember.name || '名前未設定'}</p>
+              <h2 id="report-return-title">未払いに戻しますか？</h2>
+              <p>この人の支払い報告を取り消して、未払い状態に戻します。</p>
+              <p>必要であれば、もう一度支払い報告してもらってください。</p>
+            </div>
+            <div className="report-return-sheet__actions">
+              <button type="button" className="btn btn-secondary btn-lg" onClick={cancelReturnToUnpaid} disabled={workingId === returnToUnpaidMember.id}>
+                キャンセル
+              </button>
+              <button type="button" className="btn btn-danger btn-lg" onClick={submitReturnToUnpaid} disabled={workingId === returnToUnpaidMember.id}>
+                {workingId === returnToUnpaidMember.id ? '更新中...' : '未払いに戻す'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmAllOpen && (
+        <div className="report-return-sheet" role="dialog" aria-modal="true" aria-labelledby="report-confirm-all-title">
+          <button type="button" className="report-return-sheet__backdrop" aria-label="一括確認を閉じる" onClick={cancelConfirmAll} />
+          <div className="report-return-sheet__panel">
+            <div className="report-return-sheet__body">
+              <p className="report-confirm-all-eyebrow">{visibleReportedMembers.length}件</p>
+              <h2 id="report-confirm-all-title">確認待ちの {visibleReportedMembers.length} 件をすべて確認済みにしますか？</h2>
+              <p>内容確認が終わっている場合のみ実行してください。</p>
+            </div>
+            <div className="report-return-sheet__actions">
+              <button type="button" className="btn btn-secondary btn-lg" onClick={cancelConfirmAll} disabled={bulkWorking}>
+                キャンセル
+              </button>
+              <button type="button" className="btn btn-lg report-confirm-all-submit" onClick={submitConfirmAll} disabled={bulkWorking || visibleReportedMembers.length === 0}>
+                {bulkWorking ? '更新中...' : 'すべて確認済みにする'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {adminBottomNav}
