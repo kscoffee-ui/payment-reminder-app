@@ -16,6 +16,10 @@ import {
 } from './lib/firestore'
 import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
+import KaishuruButton from './components/kaishuru/KaishuruButton'
+import KaishuruCard from './components/kaishuru/KaishuruCard'
+import StatusBadge from './components/kaishuru/StatusBadge'
+import StudioPage from './dev/studio/StudioPage'
 import kaishuruLogo from './assets/kaishuru-logo.png'
 
 function AppHeader({ children }) {
@@ -31,6 +35,7 @@ function parseRoute() {
   const [, root, eventId] = window.location.pathname.split('/')
   const token = new URLSearchParams(window.location.search).get('token') || ''
 
+  if (root === 'dev' && eventId === 'studio' && import.meta.env.DEV) return { mode: 'studio', eventId: '', token: '' }
   if (root === 'admin' && eventId) return { mode: 'admin', eventId, token }
   if (root === 'join' && eventId) return { mode: 'join', eventId, token }
   return { mode: 'create', eventId: '', token: '' }
@@ -222,7 +227,7 @@ function EventCreatePage() {
         </label>
 
         {error && <p className="error">{error}</p>}
-        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? '作成中...' : 'イベントを作成する'}</button>
+        <KaishuruButton type="submit" variant="primary" className="btn-lg" disabled={loading}>{loading ? '作成中...' : 'イベントを作成する'}</KaishuruButton>
       </form>
     </main>
   )
@@ -249,7 +254,7 @@ function CreatedScreen({ event, joinUrl, onContinue }) {
   }
 
   return (
-    <section className="card complete-card">
+    <KaishuruCard className="complete-card">
       <h2>イベントを作成しました</h2>
       <p className="sub complete-lead">まずは参加者URLをLINEグループに共有しましょう。参加者は自分で名前を入力して参加できます。</p>
 
@@ -257,9 +262,9 @@ function CreatedScreen({ event, joinUrl, onContinue }) {
         <h3>参加者に共有する</h3>
         <p className="sub">このイベントの参加URLをLINEグループなどに送れます。参加者はURLから自分で名前を入力して参加します。</p>
         <div className="share-actions">
-          <button className="btn btn-line" disabled={!canShareJoinUrl} onClick={() => openLineShare(shareMessage)}>LINEで共有</button>
+          <KaishuruButton variant="line" disabled={!canShareJoinUrl} onClick={() => openLineShare(shareMessage)}>LINEで共有</KaishuruButton>
           {nativeShareAvailable && (
-            <button className="btn btn-secondary" disabled={!canShareJoinUrl} onClick={handleNativeShare}>その他のアプリで共有</button>
+            <KaishuruButton variant="secondary" disabled={!canShareJoinUrl} onClick={handleNativeShare}>その他のアプリで共有</KaishuruButton>
           )}
         </div>
       </div>
@@ -267,8 +272,8 @@ function CreatedScreen({ event, joinUrl, onContinue }) {
 
       <p className="sub admin-page-caution">この管理ページは幹事専用です。他人に共有しないでください。</p>
 
-      <button className="btn btn-primary btn-lg" onClick={onContinue}>管理画面へ進む</button>
-    </section>
+      <KaishuruButton variant="primary" className="btn-lg" onClick={onContinue}>管理画面へ進む</KaishuruButton>
+    </KaishuruCard>
   )
 }
 
@@ -386,7 +391,7 @@ function AdminPage({ eventId, token }) {
     })
   }, [counts.rate, counts.unpaidMembers, event, joinUrl])
 
-  if (error) return <main className="container"><AppHeader /><section className="card"><p className="error">{error}</p></section></main>
+  if (error) return <main className="container"><AppHeader /><KaishuruCard><p className="error">{error}</p></KaishuruCard></main>
 
   const goDashboard = () => move(`/admin/${eventId}?token=${encodeURIComponent(token)}`)
 
@@ -398,7 +403,7 @@ function AdminPage({ eventId, token }) {
       </main>
     )
   }
-  if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
+  if (!event) return <main className="container"><AppHeader /><KaishuruCard><p className="error">イベントが見つかりません。</p></KaishuruCard></main>
 
   const confirm = async (memberId) => {
     if (workingId === memberId) return false
@@ -624,9 +629,7 @@ function AdminPage({ eventId, token }) {
                 確認済みにする
               </button>
             ) : (
-              <span className={`status-badge member-status-badge badge-${member.status}`}>
-                {statusLabel(member.status)}
-              </span>
+              <StatusBadge status={member.status} className="member-status-badge" />
             )}
           </span>
           <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
@@ -668,7 +671,7 @@ function AdminPage({ eventId, token }) {
       </AppHeader>
       {activeAdminTab === 'dashboard' && (
         <>
-          <section className="card admin-event-card">
+          <KaishuruCard className="admin-event-card">
             <div className="admin-event-card__icon" aria-hidden="true">
               <Calendar size={22} strokeWidth={2} />
             </div>
@@ -679,11 +682,11 @@ function AdminPage({ eventId, token }) {
             <button className="admin-event-card__edit-button" type="button" aria-label="イベント情報を編集" onClick={openEventSettingsEdit}>
               <ChevronRight size={20} className="admin-event-card__chevron" aria-hidden="true" />
             </button>
-          </section>
+          </KaishuruCard>
 
           <section className="dashboard-summary-section">
             <h2 className="dashboard-section-title">支払い状況サマリー</h2>
-            <div className="card dashboard-summary-card">
+            <KaishuruCard as="div" className="dashboard-summary-card" padding="compact">
               <div className="dashboard-summary-top">
                 <article className="dashboard-unpaid-focus">
                   <span>未払い</span>
@@ -723,10 +726,10 @@ function AdminPage({ eventId, token }) {
                   <b>{counts.confirmed}</b>
                 </article>
               </div>
-            </div>
+            </KaishuruCard>
           </section>
 
-          <section className="card dashboard-unpaid-list-card">
+          <KaishuruCard className="dashboard-unpaid-list-card">
             <div className="dashboard-card-head">
               <h2>未払い者</h2>
               <button className="dashboard-link-text" type="button" onClick={openUnpaidMembers}>すべて見る</button>
@@ -737,7 +740,7 @@ function AdminPage({ eventId, token }) {
                   <li key={member.id} className="dashboard-unpaid-row">
                     <span className="dashboard-unpaid-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
                     <span className="dashboard-unpaid-name">{member.name}</span>
-                    <span className="status-badge badge-unpaid">未払い</span>
+                    <StatusBadge status="unpaid" />
                   </li>
                 ))}
                 {counts.unpaidMembers.length > 3 && (
@@ -748,8 +751,9 @@ function AdminPage({ eventId, token }) {
               <p className="sub">未払い者はいません</p>
             )}
             <div className="dashboard-line-inline">
-              <button
-                className="btn btn-line btn-lg line-reminder-button"
+              <KaishuruButton
+                variant="line"
+                className="btn-lg line-reminder-button"
                 disabled={counts.unpaid === 0}
                 onClick={() => window.open(createLineShareUrl(reminderMessage), '_blank', 'noopener,noreferrer')}
               >
@@ -758,9 +762,9 @@ function AdminPage({ eventId, token }) {
                   <span className="line-reminder-title">LINEで催促</span>
                   <span className="line-reminder-subtitle">未払い者にまとめてメッセージを送る</span>
                 </span>
-              </button>
+              </KaishuruButton>
             </div>
-          </section>
+          </KaishuruCard>
         </>
       )}
 
@@ -874,7 +878,7 @@ function AdminPage({ eventId, token }) {
                         </span>
                       </span>
                       <span className="member-row-status-actions">
-                        <span className="status-badge member-status-badge badge-reported">確認待ち</span>
+                        <StatusBadge status="reported" className="member-status-badge" />
                       </span>
                       <span className="reports-action-wrap">
                       <button
@@ -945,17 +949,17 @@ function AdminPage({ eventId, token }) {
               ))}
             </ul>
             ) : (
-              <div className="card reports-empty-card reports-empty-card--search">
+              <KaishuruCard as="div" className="reports-empty-card reports-empty-card--search">
                 <Search size={27} strokeWidth={2.2} aria-hidden="true" />
                 <p>該当する確認待ちはありません。</p>
-              </div>
+              </KaishuruCard>
             )}
           </>
         ) : (
-          <div className="card reports-empty-card">
+          <KaishuruCard as="div" className="reports-empty-card">
             <CheckCircle2 size={28} strokeWidth={2.2} aria-hidden="true" />
             <p>確認待ちの報告はありません。</p>
-          </div>
+          </KaishuruCard>
         )}
 
         <div className="reports-helper-card">
@@ -998,16 +1002,14 @@ function AdminPage({ eventId, token }) {
           <div className="card report-detail-card report-detail-processed">
             <h2>対象が見つかりません</h2>
             <p className="sub">確認待ちボックスに戻って、最新の報告を確認してください。</p>
-            <button type="button" className="btn btn-secondary btn-lg" onClick={backToReportsInbox}>確認待ちボックスへ戻る</button>
+            <KaishuruButton variant="secondary" className="btn-lg" onClick={backToReportsInbox}>確認待ちボックスへ戻る</KaishuruButton>
           </div>
         ) : activeReportMember.status !== 'reported' ? (
           <div className="card report-detail-card report-detail-processed">
-            <span className={`status-badge report-detail-status badge-${activeReportMember.status}`}>
-              {statusLabel(activeReportMember.status)}
-            </span>
+            <StatusBadge status={activeReportMember.status} className="report-detail-status" />
             <h2>すでに処理済み</h2>
             <p className="sub">{activeReportMember.name || '名前未設定'} さんの報告は現在「{statusLabel(activeReportMember.status)}」です。</p>
-            <button type="button" className="btn btn-secondary btn-lg" onClick={backToReportsInbox}>確認待ちボックスへ戻る</button>
+            <KaishuruButton variant="secondary" className="btn-lg" onClick={backToReportsInbox}>確認待ちボックスへ戻る</KaishuruButton>
           </div>
         ) : (
           <div className="card report-detail-card">
@@ -1017,7 +1019,7 @@ function AdminPage({ eventId, token }) {
                 <h2>{activeReportMember.name || '名前未設定'}</h2>
                 <p className="sub">{formatUpdatedAt(activeReportMember.updatedAt)}</p>
               </div>
-              <span className="status-badge report-detail-status badge-reported">確認待ち</span>
+              <StatusBadge status="reported" className="report-detail-status" />
             </div>
 
             <div className="report-detail-grid">
@@ -1030,14 +1032,14 @@ function AdminPage({ eventId, token }) {
               <p>{activeReportMember.proofMemo || 'なし'}</p>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-confirm btn-lg report-confirm-button"
+            <KaishuruButton
+              variant="confirm"
+              className="btn-lg report-confirm-button"
               disabled={workingId === activeReportMember.id}
               onClick={confirmActiveReport}
             >
               {workingId === activeReportMember.id ? '更新中...' : '確認済みにする'}
-            </button>
+            </KaishuruButton>
           </div>
         )}
       </section>
@@ -1234,12 +1236,12 @@ class AdminErrorBoundary extends React.Component {
       return (
         <main className="container">
         <AppHeader />
-          <section className="card">
+          <KaishuruCard>
             <p className="error">管理画面の表示中にエラーが発生しました。画面を再読み込みしてください。</p>
             {import.meta.env.DEV && this.state.error && (
               <pre className="error-debug">{String(this.state.error.message || this.state.error)}</pre>
             )}
-          </section>
+          </KaishuruCard>
         </main>
       )
     }
@@ -1324,8 +1326,8 @@ function JoinPage({ eventId, token }) {
     }
   }
 
-  if (error) return <main className="container"><AppHeader /><section className="card"><p className="error">{error}</p></section></main>
-  if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
+  if (error) return <main className="container"><AppHeader /><KaishuruCard><p className="error">{error}</p></KaishuruCard></main>
+  if (!event) return <main className="container"><AppHeader /><KaishuruCard><p className="error">イベントが見つかりません。</p></KaishuruCard></main>
 
   if (!member) {
     return (
@@ -1342,7 +1344,7 @@ function JoinPage({ eventId, token }) {
             <span>あなたの名前</span>
             <input placeholder="田中 太郎" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
-          <button className="btn btn-primary btn-lg" disabled={joining} onClick={join}>{joining ? '参加中...' : '参加する'}</button>
+          <KaishuruButton variant="primary" className="btn-lg" disabled={joining} onClick={join}>{joining ? '参加中...' : '参加する'}</KaishuruButton>
         </section>
       </main>
     )
@@ -1352,13 +1354,13 @@ function JoinPage({ eventId, token }) {
     return (
       <main className="container admin-shell">
         <AppHeader />
-        <section className="card status-screen status-reported-bg">
+        <KaishuruCard className="status-screen status-reported-bg">
           <h1>支払いを報告しました</h1>
-          <p><span className="status-badge badge-reported">現在のステータス：確認待ち</span></p>
+          <p><StatusBadge status="reported">現在のステータス：確認待ち</StatusBadge></p>
           <p>幹事が確認すると「確認済み」に変わります。追加操作は不要です。</p>
           <p className="status-money">{formatMoney(event.amountPerPerson)}</p>
           <p className="sub">{event.title}</p>
-        </section>
+        </KaishuruCard>
       </main>
     )
   }
@@ -1367,13 +1369,13 @@ function JoinPage({ eventId, token }) {
     return (
       <main className="container admin-shell">
         <AppHeader />
-        <section className="card status-screen status-confirmed-bg">
+        <KaishuruCard className="status-screen status-confirmed-bg">
           <h1>支払いが確認されました</h1>
-          <p><span className="status-badge badge-confirmed">現在のステータス：確認済み</span></p>
+          <p><StatusBadge status="confirmed">現在のステータス：確認済み</StatusBadge></p>
           <p>お支払いありがとうございました。これで完了です。</p>
           <p className="status-money">{formatMoney(event.amountPerPerson)}</p>
           <p className="sub">{event.title}</p>
-        </section>
+        </KaishuruCard>
       </main>
     )
   }
@@ -1401,8 +1403,8 @@ function JoinPage({ eventId, token }) {
           <span>支払い報告メモ（任意）</span>
           <textarea placeholder="振込名義・補足など" value={proofMemo} onChange={(e) => setProofMemo(e.target.value)} />
         </label>
-        <button className="btn btn-confirm btn-lg participant-main-cta" disabled={reporting} onClick={report}>{reporting ? '送信中...' : '現金で支払ったので報告する'}</button>
-        <button className="btn btn-secondary" onClick={leave}>この部屋から抜ける</button>
+        <KaishuruButton variant="confirm" className="btn-lg participant-main-cta" disabled={reporting} onClick={report}>{reporting ? '送信中...' : '現金で支払ったので報告する'}</KaishuruButton>
+        <KaishuruButton variant="secondary" onClick={leave}>この部屋から抜ける</KaishuruButton>
       </section>
     </main>
   )
@@ -1417,6 +1419,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
+  if (route.mode === 'studio' && import.meta.env.DEV) return <StudioPage />
   if (route.mode === 'admin') return <AdminErrorBoundary><AdminPage eventId={route.eventId} token={route.token} /></AdminErrorBoundary>
   if (route.mode === 'join') return <JoinPage eventId={route.eventId} token={route.token} />
   return <EventCreatePage />
