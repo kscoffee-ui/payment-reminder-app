@@ -1889,6 +1889,10 @@ textarea {
   grid-template-columns: minmax(0, 1fr) minmax(72px, auto);
 }
 
+.studio-token-row--radius {
+  grid-template-columns: minmax(0, 1fr) minmax(142px, 56%);
+}
+
 .studio-token-row--editable {
   background: var(--ks-color-surface, #fff);
 }
@@ -1924,6 +1928,32 @@ textarea {
 .studio-color-input::-moz-color-swatch {
   border: 0;
   border-radius: var(--ks-radius-pill, 999px);
+}
+
+.studio-radius-control {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) 52px auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.studio-radius-range {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--ks-color-primary, #2563eb);
+}
+
+.studio-radius-number {
+  width: 52px;
+  min-height: 34px;
+  border: 1px solid var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-control, 12px);
+  background: var(--ks-color-white, #fff);
+  color: var(--ks-color-text, #0f172a);
+  padding: 6px 7px;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .studio-color-chip {
