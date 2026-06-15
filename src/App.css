@@ -1767,6 +1767,95 @@ textarea {
   gap: 14px;
 }
 
+.studio-panel-head {
+  display: grid;
+  gap: 7px;
+}
+
+.studio-panel-source {
+  width: fit-content;
+  border: 1px solid var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-pill, 999px);
+  background: var(--ks-color-primary-bg, #eff6ff);
+  color: var(--ks-color-primary, #2563eb);
+  padding: 4px 9px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.studio-token-group {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--ks-color-border, #e2e8f0);
+  padding-top: 12px;
+}
+
+.studio-token-group h2 {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.studio-token-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.studio-token-row {
+  min-width: 0;
+  border: 1px solid var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-card-compact, 14px);
+  background: var(--ks-color-background, #f8fafc);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, 52%);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.studio-token-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.studio-token-key {
+  min-width: 0;
+  color: var(--ks-color-text, #0f172a);
+  font-size: 0.82rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studio-token-value {
+  min-width: 0;
+  color: var(--ks-color-text-muted, #64748b);
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.studio-token-row--color {
+  grid-template-columns: minmax(0, 1fr) minmax(72px, auto);
+}
+
+.studio-color-chip {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ks-color-border, #e2e8f0);
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 45%);
+  flex: 0 0 auto;
+}
+
 .studio-eyebrow,
 .studio-preview-kicker {
   color: var(--ks-color-primary, #2563eb);
