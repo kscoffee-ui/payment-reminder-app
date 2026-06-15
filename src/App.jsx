@@ -750,61 +750,93 @@ function AdminPage({ eventId, token }) {
             {openReportActionMemberId && (
               <button type="button" className="report-action-backdrop" aria-label="操作メニューを閉じる" onClick={() => setOpenReportActionMemberId('')} />
             )}
-            <ul className="reports-inbox-list">
+            <ul className="member-list reports-inbox-list">
               {counts.reportedMembers.map((member) => (
-                <li key={member.id} className="reports-inbox-item">
-                  <div className={`reports-inbox-button ${openReportActionMemberId === member.id ? 'reports-inbox-button--menu-open' : ''}`}>
-                    <button type="button" className="reports-inbox-main" onClick={() => openReportDetail(member.id)} disabled={workingId === member.id}>
-                      <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
-                      <span className="reports-member-main">
-                        <span className="reports-member-name">{member.name || '名前未設定'}</span>
-                        <span className="reports-member-meta">{formatReportedAt(member.updatedAt)}</span>
+                <li key={member.id} className={`member-list-item member-list-item--reported reports-inbox-item ${openReportActionMemberId === member.id ? 'reports-inbox-item--menu-open' : ''}`}>
+                  <details className="member-list-details reports-member-details">
+                    <summary
+                      className={`member-list-row reports-member-row ${workingId === member.id ? 'reports-member-row--disabled' : ''}`}
+                      aria-disabled={workingId === member.id}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        if (workingId === member.id) return
+                        openReportDetail(member.id)
+                      }}
+                    >
+                      <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+                      <span className="member-row-main">
+                        <span className="member-row-name">{member.name || '名前未設定'}</span>
+                        <span className="member-row-updated">
+                          {formatReportedAt(member.updatedAt)} ・ {paymentLabel(member.paymentMethod)} ・ {hasVisibleMemo(member.proofMemo) ? 'メモあり' : 'メモなし'}
+                        </span>
                       </span>
-                      <span className="reports-member-payment">
-                        <span>{paymentLabel(member.paymentMethod)}</span>
-                        <span>{hasVisibleMemo(member.proofMemo) ? 'メモあり' : '-'}</span>
+                      <span className="member-row-status-actions">
+                        <span className="status-badge member-status-badge badge-reported">確認待ち</span>
                       </span>
-                      <span className="status-badge badge-reported reports-status-badge">確認待ち</span>
-                    </button>
-                    <div className="reports-action-wrap">
-                      <button
-                        type="button"
-                        className="reports-action-trigger"
-                        aria-label={`${member.name || '名前未設定'}の操作`}
-                        aria-haspopup="menu"
-                        aria-expanded={openReportActionMemberId === member.id}
-                        disabled={workingId === member.id}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setOpenReportActionMemberId((current) => (current === member.id ? '' : member.id))
-                        }}
-                      >
-                        <MoreVertical size={20} strokeWidth={2.4} aria-hidden="true" />
-                      </button>
-                      {openReportActionMemberId === member.id && (
-                        <div className="reports-action-menu" role="menu" onClick={(event) => event.stopPropagation()}>
-                          <button
-                            type="button"
-                            className="reports-action-menu__item"
-                            role="menuitem"
-                            disabled={workingId === member.id}
-                            onClick={() => confirmReportFromMenu(member.id)}
+                      <span className="reports-action-wrap">
+                        <button
+                          type="button"
+                          className="reports-action-trigger"
+                          aria-label={`${member.name || '名前未設定'}の操作`}
+                          aria-haspopup="menu"
+                          aria-expanded={openReportActionMemberId === member.id}
+                          disabled={workingId === member.id}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            setOpenReportActionMemberId((current) => (current === member.id ? '' : member.id))
+                          }}
+                        >
+                          <MoreVertical size={17} strokeWidth={2.4} aria-hidden="true" />
+                        </button>
+                        {openReportActionMemberId === member.id && (
+                          <div
+                            className="reports-action-menu"
+                            role="menu"
+                            onClick={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                            }}
                           >
-                            確認済みにする
-                          </button>
-                          <button
-                            type="button"
-                            className="reports-action-menu__item reports-action-menu__item--danger"
-                            role="menuitem"
-                            disabled={workingId === member.id}
-                            onClick={() => requestReturnToUnpaid(member)}
-                          >
-                            未払いに戻す
-                          </button>
-                        </div>
-                      )}
+                            <button
+                              type="button"
+                              className="reports-action-menu__item"
+                              role="menuitem"
+                              disabled={workingId === member.id}
+                              onClick={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                confirmReportFromMenu(member.id)
+                              }}
+                            >
+                              確認済みにする
+                            </button>
+                            <button
+                              type="button"
+                              className="reports-action-menu__item reports-action-menu__item--danger"
+                              role="menuitem"
+                              disabled={workingId === member.id}
+                              onClick={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                requestReturnToUnpaid(member)
+                              }}
+                            >
+                              未払いに戻す
+                            </button>
+                          </div>
+                        )}
+                      </span>
+                    </summary>
+                    <div className="member-row-detail reports-member-detail">
+                      <div className="member-detail-grid">
+                        <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+                        <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod)}</b></p>
+                        <p><span>状態</span><b>確認待ち</b></p>
+                        <p><span>報告メモ</span><b>{hasVisibleMemo(member.proofMemo) ? member.proofMemo : 'なし'}</b></p>
+                      </div>
                     </div>
-                  </div>
+                  </details>
                 </li>
               ))}
             </ul>
