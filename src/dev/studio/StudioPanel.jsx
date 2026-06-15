@@ -36,6 +36,12 @@ const EDITABLE_SIZE_TOKENS = ['buttonMinHeight', 'lineButtonMinHeight']
 const SIZE_MIN = 40
 const SIZE_MAX = 64
 
+const EDITABLE_FONT_SIZE_TOKENS = ['badge', 'button']
+const FONT_SIZE_LIMITS = {
+  badge: { min: 10, max: 16, defaultValue: 12 },
+  button: { min: 13, max: 18, defaultValue: 16 },
+}
+
 const COLOR_TOKEN_ROLES = {
   primary: '通常CTA / 進捗 / リンク',
   unpaid: '未払い。赤系で最も目立たせる',
@@ -61,6 +67,11 @@ const SPACE_TOKEN_ROLES = {
 const SIZE_TOKEN_ROLES = {
   buttonMinHeight: '通常ボタンの最小高さ',
   lineButtonMinHeight: 'LINE催促ボタンの最小高さ',
+}
+
+const FONT_SIZE_TOKEN_ROLES = {
+  badge: 'StatusBadgeの文字サイズ',
+  button: 'KaishuruButton / 主要ボタンの文字サイズ',
 }
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
@@ -132,10 +143,38 @@ function getSafePixelSize(value, fallback) {
   return `${getSafeSizeNumber(value, fallback)}px`
 }
 
+function getFontSizeLimit(tokenName) {
+  return FONT_SIZE_LIMITS[tokenName] || { min: 10, max: 18, defaultValue: 14 }
+}
+
+function getSafeFontSizeNumber(value, fallback, tokenName) {
+  const limit = getFontSizeLimit(tokenName)
+  const normalizedValue = typeof value === 'string' ? value.trim() : value
+  const valueIsPxOrNumber = typeof normalizedValue === 'number'
+    || (typeof normalizedValue === 'string' && /^\d+(\.\d+)?(px)?$/.test(normalizedValue))
+  const parsedValue = valueIsPxOrNumber ? Number.parseFloat(normalizedValue) : Number.NaN
+  const fallbackIsPx = typeof fallback === 'string' && fallback.trim().endsWith('px')
+  const parsedFallback = fallbackIsPx ? Number.parseFloat(fallback) : Number.NaN
+  const fallbackValue = Number.isFinite(parsedFallback) ? parsedFallback : limit.defaultValue
+  const sourceValue = Number.isFinite(parsedValue) ? parsedValue : fallbackValue
+  return Math.round(clampNumber(sourceValue, limit.min, limit.max))
+}
+
+function getSafePixelFontSize(value, fallback, tokenName) {
+  return `${getSafeFontSizeNumber(value, fallback, tokenName)}px`
+}
+
+function getSafeFontSizeValue(tokenName, value) {
+  const defaultValue = defaultTheme.fontSize[tokenName]
+  if (value === defaultValue) return defaultValue
+  return getSafePixelFontSize(value, defaultValue, tokenName)
+}
+
 function sanitizeStudioTheme(theme) {
   const color = isPlainObject(theme?.color) ? theme.color : {}
   const radius = isPlainObject(theme?.radius) ? theme.radius : {}
   const space = isPlainObject(theme?.space) ? theme.space : {}
+  const fontSize = isPlainObject(theme?.fontSize) ? theme.fontSize : {}
   const size = isPlainObject(theme?.size) ? theme.size : {}
 
   return {
@@ -164,6 +203,15 @@ function sanitizeStudioTheme(theme) {
         EDITABLE_SPACE_TOKENS.map((tokenName) => [
           tokenName,
           getSafePixelSpace(space[tokenName], defaultTheme.space[tokenName]),
+        ]),
+      ),
+    },
+    fontSize: {
+      ...fontSize,
+      ...Object.fromEntries(
+        EDITABLE_FONT_SIZE_TOKENS.map((tokenName) => [
+          tokenName,
+          getSafeFontSizeValue(tokenName, fontSize[tokenName]),
         ]),
       ),
     },
@@ -221,6 +269,10 @@ function isEditableSizeToken(category, key) {
   return category === 'size' && EDITABLE_SIZE_TOKENS.includes(key)
 }
 
+function isEditableFontSizeToken(category, key) {
+  return category === 'fontSize' && EDITABLE_FONT_SIZE_TOKENS.includes(key)
+}
+
 function getOrderedColorEntries(colors) {
   const colorValues = isPlainObject(colors) ? colors : {}
   const entries = Object.entries(colorValues)
@@ -261,16 +313,37 @@ function getOrderedSizeEntries(size) {
   return [...editableEntries, ...remainingEntries]
 }
 
-function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onSpaceChange, onSizeChange) {
+function getOrderedFontSizeEntries(fontSize) {
+  const fontSizeValues = isPlainObject(fontSize) ? fontSize : {}
+  const entries = Object.entries(fontSizeValues)
+  const editableEntries = EDITABLE_FONT_SIZE_TOKENS
+    .filter((key) => Object.prototype.hasOwnProperty.call(fontSizeValues, key))
+    .map((key) => [key, fontSizeValues[key]])
+  const remainingEntries = entries.filter(([key]) => !EDITABLE_FONT_SIZE_TOKENS.includes(key))
+  return [...editableEntries, ...remainingEntries]
+}
+
+function renderTokenRow(
+  category,
+  key,
+  value,
+  onColorChange,
+  onRadiusChange,
+  onSpaceChange,
+  onSizeChange,
+  onFontSizeChange,
+) {
   const isColor = category === 'color'
   const isRadius = category === 'radius'
   const isSpace = category === 'space'
   const isSize = category === 'size'
+  const isFontSize = category === 'fontSize'
   const canEditColor = isEditableColorToken(category, key)
   const canEditRadius = isEditableRadiusToken(category, key)
   const canEditSpace = isEditableSpaceToken(category, key)
   const canEditSize = isEditableSizeToken(category, key)
-  const canEdit = canEditColor || canEditRadius || canEditSpace || canEditSize
+  const canEditFontSize = isEditableFontSizeToken(category, key)
+  const canEdit = canEditColor || canEditRadius || canEditSpace || canEditSize || canEditFontSize
   const safeColor = isColor ? getSafeHexColor(value, defaultTheme.color[key]) : value
   const safeRadiusNumber = canEditRadius ? getSafeRadiusNumber(value, defaultTheme.radius[key]) : null
   const safeRadiusValue = canEditRadius ? `${safeRadiusNumber}px` : null
@@ -278,12 +351,17 @@ function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onS
   const safeSpaceValue = canEditSpace ? `${safeSpaceNumber}px` : null
   const safeSizeNumber = canEditSize ? getSafeSizeNumber(value, defaultTheme.size[key]) : null
   const safeSizeValue = canEditSize ? `${safeSizeNumber}px` : null
+  const safeFontSizeNumber = canEditFontSize
+    ? getSafeFontSizeNumber(value, defaultTheme.fontSize[key], key)
+    : null
+  const safeFontSizeValue = canEditFontSize ? `${safeFontSizeNumber}px` : null
   const className = [
     'studio-token-row',
     isColor && 'studio-token-row--color',
     isRadius && 'studio-token-row--radius',
     isSpace && 'studio-token-row--space',
     isSize && 'studio-token-row--size',
+    isFontSize && 'studio-token-row--font-size',
     canEdit && 'studio-token-row--editable',
   ].filter(Boolean).join(' ')
 
@@ -304,7 +382,9 @@ function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onS
               ? RADIUS_TOKEN_ROLES[key]
               : canEditSpace
                 ? SPACE_TOKEN_ROLES[key]
-                : SIZE_TOKEN_ROLES[key],
+                : canEditSize
+                  ? SIZE_TOKEN_ROLES[key]
+                  : FONT_SIZE_TOKEN_ROLES[key],
         ),
       ]),
     ]),
@@ -398,11 +478,45 @@ function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onS
               }),
               React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeSizeValue),
             ])
+            : canEditFontSize
+              ? React.createElement('span', { className: 'studio-font-size-control', key: 'control' }, [
+                React.createElement('input', {
+                  className: 'studio-font-size-range',
+                  type: 'range',
+                  min: getFontSizeLimit(key).min,
+                  max: getFontSizeLimit(key).max,
+                  step: 1,
+                  value: safeFontSizeNumber,
+                  'aria-label': `${key} の文字サイズ`,
+                  onChange: (event) => onFontSizeChange(key, event.target.value),
+                  key: 'range',
+                }),
+                React.createElement('input', {
+                  className: 'studio-font-size-number',
+                  type: 'number',
+                  min: getFontSizeLimit(key).min,
+                  max: getFontSizeLimit(key).max,
+                  step: 1,
+                  value: safeFontSizeNumber,
+                  'aria-label': `${key} の文字サイズ数値`,
+                  onChange: (event) => onFontSizeChange(key, event.target.value),
+                  key: 'number',
+                }),
+                React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeFontSizeValue),
+              ])
       : React.createElement('code', { className: 'studio-token-value', key: 'value' }, String(value)),
   ])
 }
 
-function renderCategory(category, values, onColorChange, onRadiusChange, onSpaceChange, onSizeChange) {
+function renderCategory(
+  category,
+  values,
+  onColorChange,
+  onRadiusChange,
+  onSpaceChange,
+  onSizeChange,
+  onFontSizeChange,
+) {
   const entries = category === 'color'
     ? getOrderedColorEntries(values)
     : category === 'radius'
@@ -411,7 +525,9 @@ function renderCategory(category, values, onColorChange, onRadiusChange, onSpace
         ? getOrderedSpaceEntries(values)
         : category === 'size'
           ? getOrderedSizeEntries(values)
-          : Object.entries(values || {})
+          : category === 'fontSize'
+            ? getOrderedFontSizeEntries(values)
+            : Object.entries(values || {})
 
   return React.createElement('section', { className: 'studio-token-group', key: category }, [
     React.createElement('h2', { key: 'heading' }, CATEGORY_LABELS[category] || category),
@@ -424,6 +540,7 @@ function renderCategory(category, values, onColorChange, onRadiusChange, onSpace
         onRadiusChange,
         onSpaceChange,
         onSizeChange,
+        onFontSizeChange,
       )),
     ),
   ])
@@ -501,6 +618,26 @@ export default function StudioPanel() {
           size: {
             ...currentSize,
             [tokenName]: safeSize,
+          },
+        },
+      }
+    })
+  }, [])
+
+  const handleFontSizeChange = useCallback((tokenName, value) => {
+    setFeedbackStatus(null)
+    setPanelState((currentState) => {
+      const currentFontSize = isPlainObject(currentState.theme.fontSize)
+        ? currentState.theme.fontSize
+        : defaultTheme.fontSize
+      const safeFontSize = getSafePixelFontSize(value, currentFontSize[tokenName], tokenName)
+      return {
+        ...currentState,
+        theme: {
+          ...currentState.theme,
+          fontSize: {
+            ...currentFontSize,
+            [tokenName]: safeFontSize,
           },
         },
       }
@@ -603,6 +740,7 @@ export default function StudioPanel() {
       handleRadiusChange,
       handleSpaceChange,
       handleSizeChange,
+      handleFontSizeChange,
     )),
   ])
 }
