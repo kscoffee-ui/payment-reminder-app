@@ -32,6 +32,10 @@ const EDITABLE_SPACE_TOKENS = ['cardY', 'cardX']
 const SPACE_MIN = 8
 const SPACE_MAX = 32
 
+const EDITABLE_SIZE_TOKENS = ['buttonMinHeight', 'lineButtonMinHeight']
+const SIZE_MIN = 40
+const SIZE_MAX = 64
+
 const COLOR_TOKEN_ROLES = {
   primary: '通常CTA / 進捗 / リンク',
   unpaid: '未払い。赤系で最も目立たせる',
@@ -52,6 +56,11 @@ const RADIUS_TOKEN_ROLES = {
 const SPACE_TOKEN_ROLES = {
   cardY: 'カード上下余白',
   cardX: 'カード左右余白',
+}
+
+const SIZE_TOKEN_ROLES = {
+  buttonMinHeight: '通常ボタンの最小高さ',
+  lineButtonMinHeight: 'LINE催促ボタンの最小高さ',
 }
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
@@ -111,10 +120,23 @@ function getSafePixelSpace(value, fallback) {
   return `${getSafeSpaceNumber(value, fallback)}px`
 }
 
+function getSafeSizeNumber(value, fallback) {
+  const parsedValue = Number.parseFloat(value)
+  const parsedFallback = Number.parseFloat(fallback)
+  const fallbackValue = Number.isFinite(parsedFallback) ? parsedFallback : SIZE_MIN
+  const sourceValue = Number.isFinite(parsedValue) ? parsedValue : fallbackValue
+  return Math.round(clampNumber(sourceValue, SIZE_MIN, SIZE_MAX))
+}
+
+function getSafePixelSize(value, fallback) {
+  return `${getSafeSizeNumber(value, fallback)}px`
+}
+
 function sanitizeStudioTheme(theme) {
   const color = isPlainObject(theme?.color) ? theme.color : {}
   const radius = isPlainObject(theme?.radius) ? theme.radius : {}
   const space = isPlainObject(theme?.space) ? theme.space : {}
+  const size = isPlainObject(theme?.size) ? theme.size : {}
 
   return {
     ...theme,
@@ -142,6 +164,15 @@ function sanitizeStudioTheme(theme) {
         EDITABLE_SPACE_TOKENS.map((tokenName) => [
           tokenName,
           getSafePixelSpace(space[tokenName], defaultTheme.space[tokenName]),
+        ]),
+      ),
+    },
+    size: {
+      ...size,
+      ...Object.fromEntries(
+        EDITABLE_SIZE_TOKENS.map((tokenName) => [
+          tokenName,
+          getSafePixelSize(size[tokenName], defaultTheme.size[tokenName]),
         ]),
       ),
     },
@@ -186,6 +217,10 @@ function isEditableSpaceToken(category, key) {
   return category === 'space' && EDITABLE_SPACE_TOKENS.includes(key)
 }
 
+function isEditableSizeToken(category, key) {
+  return category === 'size' && EDITABLE_SIZE_TOKENS.includes(key)
+}
+
 function getOrderedColorEntries(colors) {
   const colorValues = isPlainObject(colors) ? colors : {}
   const entries = Object.entries(colorValues)
@@ -216,24 +251,39 @@ function getOrderedSpaceEntries(space) {
   return [...editableEntries, ...remainingEntries]
 }
 
-function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onSpaceChange) {
+function getOrderedSizeEntries(size) {
+  const sizeValues = isPlainObject(size) ? size : {}
+  const entries = Object.entries(sizeValues)
+  const editableEntries = EDITABLE_SIZE_TOKENS
+    .filter((key) => Object.prototype.hasOwnProperty.call(sizeValues, key))
+    .map((key) => [key, sizeValues[key]])
+  const remainingEntries = entries.filter(([key]) => !EDITABLE_SIZE_TOKENS.includes(key))
+  return [...editableEntries, ...remainingEntries]
+}
+
+function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onSpaceChange, onSizeChange) {
   const isColor = category === 'color'
   const isRadius = category === 'radius'
   const isSpace = category === 'space'
+  const isSize = category === 'size'
   const canEditColor = isEditableColorToken(category, key)
   const canEditRadius = isEditableRadiusToken(category, key)
   const canEditSpace = isEditableSpaceToken(category, key)
-  const canEdit = canEditColor || canEditRadius || canEditSpace
+  const canEditSize = isEditableSizeToken(category, key)
+  const canEdit = canEditColor || canEditRadius || canEditSpace || canEditSize
   const safeColor = isColor ? getSafeHexColor(value, defaultTheme.color[key]) : value
   const safeRadiusNumber = canEditRadius ? getSafeRadiusNumber(value, defaultTheme.radius[key]) : null
   const safeRadiusValue = canEditRadius ? `${safeRadiusNumber}px` : null
   const safeSpaceNumber = canEditSpace ? getSafeSpaceNumber(value, defaultTheme.space[key]) : null
   const safeSpaceValue = canEditSpace ? `${safeSpaceNumber}px` : null
+  const safeSizeNumber = canEditSize ? getSafeSizeNumber(value, defaultTheme.size[key]) : null
+  const safeSizeValue = canEditSize ? `${safeSizeNumber}px` : null
   const className = [
     'studio-token-row',
     isColor && 'studio-token-row--color',
     isRadius && 'studio-token-row--radius',
     isSpace && 'studio-token-row--space',
+    isSize && 'studio-token-row--size',
     canEdit && 'studio-token-row--editable',
   ].filter(Boolean).join(' ')
 
@@ -252,7 +302,9 @@ function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onS
             ? COLOR_TOKEN_ROLES[key]
             : canEditRadius
               ? RADIUS_TOKEN_ROLES[key]
-              : SPACE_TOKEN_ROLES[key],
+              : canEditSpace
+                ? SPACE_TOKEN_ROLES[key]
+                : SIZE_TOKEN_ROLES[key],
         ),
       ]),
     ]),
@@ -320,18 +372,46 @@ function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onS
             }),
             React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeSpaceValue),
           ])
+          : canEditSize
+            ? React.createElement('span', { className: 'studio-size-control', key: 'control' }, [
+              React.createElement('input', {
+                className: 'studio-size-range',
+                type: 'range',
+                min: SIZE_MIN,
+                max: SIZE_MAX,
+                step: 1,
+                value: safeSizeNumber,
+                'aria-label': `${key} の高さ`,
+                onChange: (event) => onSizeChange(key, event.target.value),
+                key: 'range',
+              }),
+              React.createElement('input', {
+                className: 'studio-size-number',
+                type: 'number',
+                min: SIZE_MIN,
+                max: SIZE_MAX,
+                step: 1,
+                value: safeSizeNumber,
+                'aria-label': `${key} の高さ数値`,
+                onChange: (event) => onSizeChange(key, event.target.value),
+                key: 'number',
+              }),
+              React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeSizeValue),
+            ])
       : React.createElement('code', { className: 'studio-token-value', key: 'value' }, String(value)),
   ])
 }
 
-function renderCategory(category, values, onColorChange, onRadiusChange, onSpaceChange) {
+function renderCategory(category, values, onColorChange, onRadiusChange, onSpaceChange, onSizeChange) {
   const entries = category === 'color'
     ? getOrderedColorEntries(values)
     : category === 'radius'
       ? getOrderedRadiusEntries(values)
       : category === 'space'
         ? getOrderedSpaceEntries(values)
-        : Object.entries(values || {})
+        : category === 'size'
+          ? getOrderedSizeEntries(values)
+          : Object.entries(values || {})
 
   return React.createElement('section', { className: 'studio-token-group', key: category }, [
     React.createElement('h2', { key: 'heading' }, CATEGORY_LABELS[category] || category),
@@ -343,6 +423,7 @@ function renderCategory(category, values, onColorChange, onRadiusChange, onSpace
         onColorChange,
         onRadiusChange,
         onSpaceChange,
+        onSizeChange,
       )),
     ),
   ])
@@ -402,6 +483,24 @@ export default function StudioPanel() {
           space: {
             ...currentSpace,
             [tokenName]: safeSpace,
+          },
+        },
+      }
+    })
+  }, [])
+
+  const handleSizeChange = useCallback((tokenName, value) => {
+    setFeedbackStatus(null)
+    setPanelState((currentState) => {
+      const currentSize = isPlainObject(currentState.theme.size) ? currentState.theme.size : defaultTheme.size
+      const safeSize = getSafePixelSize(value, currentSize[tokenName])
+      return {
+        ...currentState,
+        theme: {
+          ...currentState.theme,
+          size: {
+            ...currentSize,
+            [tokenName]: safeSize,
           },
         },
       }
@@ -503,6 +602,7 @@ export default function StudioPanel() {
       handleColorChange,
       handleRadiusChange,
       handleSpaceChange,
+      handleSizeChange,
     )),
   ])
 }
