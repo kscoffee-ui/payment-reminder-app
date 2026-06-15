@@ -1822,6 +1822,12 @@ textarea {
   gap: 8px;
 }
 
+.studio-token-label {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
 .studio-token-key {
   min-width: 0;
   color: var(--ks-color-text, #0f172a);
@@ -1830,6 +1836,13 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.studio-token-role {
+  color: var(--ks-color-text-muted, #64748b);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .studio-token-value {
@@ -1845,6 +1858,43 @@ textarea {
 
 .studio-token-row--color {
   grid-template-columns: minmax(0, 1fr) minmax(72px, auto);
+}
+
+.studio-token-row--editable {
+  background: var(--ks-color-surface, #fff);
+}
+
+.studio-color-control {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.studio-color-input {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  border: 1px solid var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-pill, 999px);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.studio-color-input::-webkit-color-swatch-wrapper {
+  padding: 3px;
+}
+
+.studio-color-input::-webkit-color-swatch {
+  border: 0;
+  border-radius: var(--ks-radius-pill, 999px);
+}
+
+.studio-color-input::-moz-color-swatch {
+  border: 0;
+  border-radius: var(--ks-radius-pill, 999px);
 }
 
 .studio-color-chip {
