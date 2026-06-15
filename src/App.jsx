@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, JapaneseYen, LayoutDashboard, Megaphone, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
@@ -288,21 +288,27 @@ function AdminPage({ eventId, token }) {
   const joinUrl = `${window.location.origin}/join/${eventId}?token=${encodeURIComponent(joinToken)}`
 
   useEffect(() => {
+    let cancelled = false
     let stop1 = () => {}
     let stop2 = () => {}
 
     getEvent(eventId)
       .then((ev) => {
+        if (cancelled) return
         if (ev.adminToken !== token) {
           setError('幹事用トークンが不正です。')
           return
         }
-        stop1 = subscribeEvent(eventId, setEvent, (err) => setError(err.message))
+        setEvent(ev)
+        stop1 = subscribeEvent(eventId, setEvent, (err) => setError(err.message), { immediate: false })
         stop2 = subscribeMembers(eventId, setMembers, (err) => setError(err.message))
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (!cancelled) setError(err.message)
+      })
 
     return () => {
+      cancelled = true
       stop1()
       stop2()
     }
@@ -383,6 +389,7 @@ function AdminPage({ eventId, token }) {
     setWorkingId(memberId)
     try {
       await removeMember({ eventId, memberId })
+      setMembers((currentMembers) => currentMembers.filter((member) => member.id !== memberId))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -936,36 +943,56 @@ function JoinPage({ eventId, token }) {
   const [error, setError] = useState('')
   const [joining, setJoining] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const memberSubscriptionRef = useRef(() => {})
+
+  const stopMemberSubscription = () => {
+    memberSubscriptionRef.current()
+    memberSubscriptionRef.current = () => {}
+  }
+
+  const startMemberSubscription = (memberId) => {
+    stopMemberSubscription()
+    memberSubscriptionRef.current = subscribeMember(eventId, memberId, setMember, () => {
+      clearMemberBinding(eventId)
+      setMember(null)
+      stopMemberSubscription()
+    })
+  }
 
   useEffect(() => {
+    let cancelled = false
     let unsubEvent = () => {}
-    let unsubMember = () => {}
 
     getEvent(eventId)
       .then((ev) => {
+        if (cancelled) return
         if (ev.participantToken !== token) {
           setError('参加者用トークンが不正です。')
           return
         }
 
         setEvent(ev)
-        unsubEvent = subscribeEvent(eventId, setEvent, (err) => setError(err.message))
+        unsubEvent = subscribeEvent(eventId, setEvent, (err) => setError(err.message), { immediate: false })
 
         const binding = getMemberBinding(eventId)
         if (binding?.memberId) {
-          unsubMember = subscribeMember(eventId, binding.memberId, setMember, () => clearMemberBinding(eventId))
+          startMemberSubscription(binding.memberId)
         }
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (!cancelled) setError(err.message)
+      })
 
     return () => {
+      cancelled = true
       unsubEvent()
-      unsubMember()
+      stopMemberSubscription()
     }
   }, [eventId, token])
 
   const leave = () => {
     if (!window.confirm('この部屋から抜けますか？')) return
+    stopMemberSubscription()
     clearMemberBinding(eventId)
     setMember(null)
     setName('')
@@ -979,8 +1006,10 @@ function JoinPage({ eventId, token }) {
     setJoining(true)
     try {
       const memberId = await joinEvent({ eventId, name: trimmed, paymentMethod: event.paymentMethod })
-      setMember({ id: memberId, name: trimmed, status: 'unpaid', paymentMethod: event.paymentMethod, proofMemo: '' })
+      const now = new Date().toISOString()
+      setMember({ id: memberId, name: trimmed, status: 'unpaid', paymentMethod: event.paymentMethod, proofMemo: '', createdAt: now, updatedAt: now })
       setMemberBinding({ eventId, memberId, memberName: trimmed })
+      startMemberSubscription(memberId)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -994,9 +1023,10 @@ function JoinPage({ eventId, token }) {
     setError('')
     try {
       await reportPayment({ eventId, memberId: member.id, proofMemo })
+      const updatedAt = new Date().toISOString()
       setMember((prev) => {
         if (!prev) return prev
-        return { ...prev, status: 'reported', proofMemo: proofMemo.trim() }
+        return { ...prev, status: 'reported', proofMemo: proofMemo.trim(), updatedAt }
       })
     } catch (err) {
       setError(err.message)
