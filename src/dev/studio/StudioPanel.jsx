@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { applyTheme } from '../../theme/applyTheme'
 import { defaultTheme } from '../../theme/defaultTheme'
-import { loadTheme, saveTheme } from '../../theme/themeStorage'
+import { loadTheme, resetTheme, saveTheme } from '../../theme/themeStorage'
 
 const CATEGORY_LABELS = {
   color: 'Color',
@@ -163,14 +163,14 @@ function renderCategory(category, values, onColorChange) {
 
 export default function StudioPanel() {
   const [{ theme, hasSavedTheme }, setPanelState] = useState(createPanelState)
-  const [saveStatus, setSaveStatus] = useState(null)
+  const [feedbackStatus, setFeedbackStatus] = useState(null)
 
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
 
   const handleColorChange = useCallback((tokenName, value) => {
-    setSaveStatus(null)
+    setFeedbackStatus(null)
     setPanelState((currentState) => {
       const safeColor = getSafeHexColor(value, currentState.theme.color[tokenName])
       return {
@@ -190,7 +190,7 @@ export default function StudioPanel() {
     const safeTheme = sanitizeEditableColors(theme)
     const succeeded = saveTheme(safeTheme)
 
-    setSaveStatus(succeeded ? 'success' : 'error')
+    setFeedbackStatus(succeeded ? 'save-success' : 'save-error')
     if (succeeded) {
       setPanelState((currentState) => ({
         ...currentState,
@@ -200,13 +200,31 @@ export default function StudioPanel() {
     }
   }, [theme])
 
-  const saveMessage = saveStatus === 'success'
-    ? '保存しました'
-    : saveStatus === 'error'
-      ? '保存できませんでした'
-      : ''
+  const handleResetTheme = useCallback(() => {
+    const succeeded = resetTheme()
 
-  // 現在のテーマ全体を、押したときだけlocalStorageへ保存する
+    if (succeeded) {
+      const defaultPanelTheme = sanitizeEditableColors(defaultTheme)
+      applyTheme(defaultTheme)
+      setPanelState({
+        theme: defaultPanelTheme,
+        hasSavedTheme: false,
+      })
+    }
+
+    setFeedbackStatus(succeeded ? 'reset-success' : 'reset-error')
+  }, [])
+
+  const feedbackMessage = {
+    'save-success': '保存しました',
+    'save-error': '保存できませんでした',
+    'reset-success': '初期テーマに戻しました',
+    'reset-error': 'Resetできませんでした',
+  }[feedbackStatus] || ''
+  const isFeedbackSuccess = feedbackStatus?.endsWith('success')
+  const isFeedbackError = feedbackStatus?.endsWith('error')
+
+  // 保存とResetだけをlocalStorageへつなぎ、JSON出力はまだ持たせない
   return React.createElement('section', { className: 'studio-panel' }, [
     React.createElement('div', { className: 'studio-panel-head', key: 'head' }, [
       React.createElement('p', { className: 'studio-eyebrow', key: 'eyebrow' }, 'Kaishuru UI Studio'),
@@ -222,15 +240,21 @@ export default function StudioPanel() {
           onClick: handleSaveTheme,
           key: 'button',
         }, '保存'),
+        React.createElement('button', {
+          className: 'btn btn-secondary studio-save-button',
+          type: 'button',
+          onClick: handleResetTheme,
+          key: 'reset',
+        }, 'Reset'),
         React.createElement('span', {
           className: [
             'studio-save-status',
-            saveStatus === 'success' && 'studio-save-status--success',
-            saveStatus === 'error' && 'studio-save-status--error',
+            isFeedbackSuccess && 'studio-save-status--success',
+            isFeedbackError && 'studio-save-status--error',
           ].filter(Boolean).join(' '),
           'aria-live': 'polite',
           key: 'status',
-        }, saveMessage),
+        }, feedbackMessage),
       ]),
     ]),
     ...Object.keys(CATEGORY_LABELS).map((category) => renderCategory(category, theme[category], handleColorChange)),
