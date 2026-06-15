@@ -758,8 +758,8 @@ textarea {
 }
 
 .reports-inbox-screen {
-  gap: 14px;
-  padding-inline: 0;
+  gap: 10px;
+  padding: 0 2px;
 }
 
 .reports-ios-header {
@@ -796,8 +796,8 @@ textarea {
 
 .reports-ios-title-row h1 {
   color: #0f172a;
-  font-size: 1.48rem;
-  line-height: 1.16;
+  font-size: 1.12rem;
+  line-height: 1.25;
   font-weight: 800;
 }
 
@@ -876,16 +876,16 @@ textarea {
 }
 
 .reports-search-field {
-  min-height: 52px;
-  border: 1px solid #e6eaf0;
+  min-height: 48px;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: #fff;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  color: #94a3b8;
-  box-shadow: 0 6px 18px rgb(15 23 42 / 4%);
+  color: #64748b;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 4%);
 }
 
 .reports-search-field input {
@@ -896,13 +896,13 @@ textarea {
   padding: 0;
   color: #0f172a;
   font-size: 0.92rem;
-  font-weight: 650;
+  font-weight: 600;
   outline: 0;
 }
 
 .reports-search-field input::placeholder {
   color: #94a3b8;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .reports-sort-wrap {
@@ -922,8 +922,8 @@ textarea {
   position: relative;
   z-index: 31;
   width: 100%;
-  min-height: 52px;
-  border: 1px solid #e6eaf0;
+  min-height: 48px;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: #fff;
   color: #334155;
@@ -934,7 +934,7 @@ textarea {
   padding: 0 12px;
   font-size: 0.86rem;
   font-weight: 800;
-  box-shadow: 0 6px 18px rgb(15 23 42 / 4%);
+  box-shadow: 0 4px 12px rgb(15 23 42 / 4%);
   cursor: pointer;
 }
 
@@ -982,12 +982,19 @@ textarea {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 7px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  overflow: visible;
+  box-shadow: 0 6px 18px rgb(15 23 42 / 4%);
 }
 
 .reports-inbox-item {
   position: relative;
+}
+
+.reports-inbox-item--menu-open {
+  z-index: 40;
 }
 
 .report-action-backdrop {
@@ -1122,23 +1129,37 @@ textarea {
   font-size: 0.71rem;
 }
 
-.reports-action-wrap {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  padding-right: 8px;
+.reports-member-row:active {
+  background: #fff7ed;
 }
 
-.reports-action-trigger {
-  width: 42px;
-  height: 44px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: #64748b;
+.reports-member-row--disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.reports-action-wrap {
+  position: relative;
+  width: 18px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  justify-self: center;
+  padding-right: 0;
+}
+
+.reports-action-trigger {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
 }
 
@@ -1150,8 +1171,8 @@ textarea {
 
 .reports-action-menu {
   position: absolute;
-  top: 52px;
-  right: 8px;
+  top: 38px;
+  right: -8px;
   z-index: 42;
   width: 176px;
   border: 1px solid #e6eaf0;
@@ -1168,7 +1189,7 @@ textarea {
   border: 0;
   border-radius: 10px;
   background: #fff;
-  color: #0f172a;
+  color: #2563eb;
   padding: 10px 12px;
   text-align: left;
   font-size: 0.9rem;
@@ -1210,13 +1231,14 @@ textarea {
 }
 
 .reports-helper-card {
-  border: 1px solid #dbeafe;
-  border-radius: 16px;
-  background: #eff6ff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
   color: #1e3a8a;
-  padding: 14px 14px 15px;
+  padding: 12px;
   display: grid;
   gap: 8px;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 4%);
 }
 
 .reports-helper-title {
@@ -1237,7 +1259,7 @@ textarea {
 
 .reports-bulk-confirm-button {
   width: 100%;
-  min-height: 56px;
+  min-height: 52px;
   border-radius: 14px;
   background: #2563eb;
   color: #fff;
