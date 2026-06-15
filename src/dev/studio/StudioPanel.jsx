@@ -97,6 +97,16 @@ function createPanelState() {
   }
 }
 
+async function copyTextToClipboard(text) {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return false
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function isEditableColorToken(category, key) {
   return category === 'color' && EDITABLE_COLOR_TOKENS.includes(key)
 }
@@ -215,16 +225,28 @@ export default function StudioPanel() {
     setFeedbackStatus(succeeded ? 'reset-success' : 'reset-error')
   }, [])
 
+  const handleCopyThemeJson = useCallback(async () => {
+    try {
+      const themeJson = JSON.stringify(sanitizeEditableColors(theme), null, 2)
+      const succeeded = await copyTextToClipboard(themeJson)
+      setFeedbackStatus(succeeded ? 'copy-success' : 'copy-error')
+    } catch {
+      setFeedbackStatus('copy-error')
+    }
+  }, [theme])
+
   const feedbackMessage = {
     'save-success': '保存しました',
     'save-error': '保存できませんでした',
     'reset-success': '初期テーマに戻しました',
     'reset-error': 'Resetできませんでした',
+    'copy-success': 'JSONをコピーしました',
+    'copy-error': 'JSONをコピーできませんでした',
   }[feedbackStatus] || ''
   const isFeedbackSuccess = feedbackStatus?.endsWith('success')
   const isFeedbackError = feedbackStatus?.endsWith('error')
 
-  // 保存とResetだけをlocalStorageへつなぎ、JSON出力はまだ持たせない
+  // 保存・Reset・JSONコピーをStudio内だけで扱い、本体画面には影響させない
   return React.createElement('section', { className: 'studio-panel' }, [
     React.createElement('div', { className: 'studio-panel-head', key: 'head' }, [
       React.createElement('p', { className: 'studio-eyebrow', key: 'eyebrow' }, 'Kaishuru UI Studio'),
@@ -246,6 +268,12 @@ export default function StudioPanel() {
           onClick: handleResetTheme,
           key: 'reset',
         }, 'Reset'),
+        React.createElement('button', {
+          className: 'btn btn-secondary studio-save-button',
+          type: 'button',
+          onClick: handleCopyThemeJson,
+          key: 'copy',
+        }, 'JSONコピー'),
         React.createElement('span', {
           className: [
             'studio-save-status',
