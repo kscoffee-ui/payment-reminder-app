@@ -1783,6 +1783,35 @@ textarea {
   font-weight: 800;
 }
 
+.studio-save-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 3px;
+}
+
+.studio-save-button {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 0.86rem;
+}
+
+.studio-save-status {
+  min-height: 1.3em;
+  color: var(--ks-color-text-muted, #64748b);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.studio-save-status--success {
+  color: var(--ks-color-confirmed-text, #166534);
+}
+
+.studio-save-status--error {
+  color: var(--ks-color-unpaid-text, #b91c1c);
+}
+
 .studio-token-group {
   display: grid;
   gap: 8px;

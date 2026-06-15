@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { applyTheme } from '../../theme/applyTheme'
 import { defaultTheme } from '../../theme/defaultTheme'
-import { loadTheme } from '../../theme/themeStorage'
+import { loadTheme, saveTheme } from '../../theme/themeStorage'
 
 const CATEGORY_LABELS = {
   color: 'Color',
@@ -163,12 +163,14 @@ function renderCategory(category, values, onColorChange) {
 
 export default function StudioPanel() {
   const [{ theme, hasSavedTheme }, setPanelState] = useState(createPanelState)
+  const [saveStatus, setSaveStatus] = useState(null)
 
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
 
   const handleColorChange = useCallback((tokenName, value) => {
+    setSaveStatus(null)
     setPanelState((currentState) => {
       const safeColor = getSafeHexColor(value, currentState.theme.color[tokenName])
       return {
@@ -184,15 +186,52 @@ export default function StudioPanel() {
     })
   }, [])
 
-  // 保存はせず、Studio上で現在の色だけを一時的に試せるようにする
+  const handleSaveTheme = useCallback(() => {
+    const safeTheme = sanitizeEditableColors(theme)
+    const succeeded = saveTheme(safeTheme)
+
+    setSaveStatus(succeeded ? 'success' : 'error')
+    if (succeeded) {
+      setPanelState((currentState) => ({
+        ...currentState,
+        theme: safeTheme,
+        hasSavedTheme: true,
+      }))
+    }
+  }, [theme])
+
+  const saveMessage = saveStatus === 'success'
+    ? '保存しました'
+    : saveStatus === 'error'
+      ? '保存できませんでした'
+      : ''
+
+  // 現在のテーマ全体を、押したときだけlocalStorageへ保存する
   return React.createElement('section', { className: 'studio-panel' }, [
     React.createElement('div', { className: 'studio-panel-head', key: 'head' }, [
       React.createElement('p', { className: 'studio-eyebrow', key: 'eyebrow' }, 'Kaishuru UI Studio'),
       React.createElement('h1', { key: 'title' }, 'Theme tokens'),
       React.createElement('p', { className: 'studio-lead', key: 'lead' }, '重要な色だけを一時的に調整できます。'),
       React.createElement('span', { className: 'studio-panel-source', key: 'source' },
-        hasSavedTheme ? '保存済みテーマ + defaultTheme / 未保存' : 'defaultTheme / 未保存',
+        hasSavedTheme ? '保存済みテーマ + defaultTheme' : 'defaultTheme',
       ),
+      React.createElement('div', { className: 'studio-save-row', key: 'save-row' }, [
+        React.createElement('button', {
+          className: 'btn btn-primary studio-save-button',
+          type: 'button',
+          onClick: handleSaveTheme,
+          key: 'button',
+        }, '保存'),
+        React.createElement('span', {
+          className: [
+            'studio-save-status',
+            saveStatus === 'success' && 'studio-save-status--success',
+            saveStatus === 'error' && 'studio-save-status--error',
+          ].filter(Boolean).join(' '),
+          'aria-live': 'polite',
+          key: 'status',
+        }, saveMessage),
+      ]),
     ]),
     ...Object.keys(CATEGORY_LABELS).map((category) => renderCategory(category, theme[category], handleColorChange)),
   ])
