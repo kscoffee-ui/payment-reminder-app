@@ -1889,7 +1889,8 @@ textarea {
   grid-template-columns: minmax(0, 1fr) minmax(72px, auto);
 }
 
-.studio-token-row--radius {
+.studio-token-row--radius,
+.studio-token-row--space {
   grid-template-columns: minmax(0, 1fr) minmax(142px, 56%);
 }
 
@@ -1930,7 +1931,8 @@ textarea {
   border-radius: var(--ks-radius-pill, 999px);
 }
 
-.studio-radius-control {
+.studio-radius-control,
+.studio-space-control {
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(72px, 1fr) 52px auto;
@@ -1938,13 +1940,15 @@ textarea {
   gap: 7px;
 }
 
-.studio-radius-range {
+.studio-radius-range,
+.studio-space-range {
   width: 100%;
   min-height: 28px;
   accent-color: var(--ks-color-primary, #2563eb);
 }
 
-.studio-radius-number {
+.studio-radius-number,
+.studio-space-number {
   width: 52px;
   min-height: 34px;
   border: 1px solid var(--ks-color-border, #e2e8f0);

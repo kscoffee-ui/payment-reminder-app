@@ -28,6 +28,10 @@ const EDITABLE_RADIUS_TOKENS = ['card', 'control']
 const RADIUS_MIN = 0
 const RADIUS_MAX = 32
 
+const EDITABLE_SPACE_TOKENS = ['cardY', 'cardX']
+const SPACE_MIN = 8
+const SPACE_MAX = 32
+
 const COLOR_TOKEN_ROLES = {
   primary: '通常CTA / 進捗 / リンク',
   unpaid: '未払い。赤系で最も目立たせる',
@@ -43,6 +47,11 @@ const COLOR_TOKEN_ROLES = {
 const RADIUS_TOKEN_ROLES = {
   card: 'カード角丸',
   control: 'ボタン / 入力欄の角丸',
+}
+
+const SPACE_TOKEN_ROLES = {
+  cardY: 'カード上下余白',
+  cardX: 'カード左右余白',
 }
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
@@ -90,9 +99,22 @@ function getSafePixelRadius(value, fallback) {
   return `${getSafeRadiusNumber(value, fallback)}px`
 }
 
+function getSafeSpaceNumber(value, fallback) {
+  const parsedValue = Number.parseFloat(value)
+  const parsedFallback = Number.parseFloat(fallback)
+  const fallbackValue = Number.isFinite(parsedFallback) ? parsedFallback : SPACE_MIN
+  const sourceValue = Number.isFinite(parsedValue) ? parsedValue : fallbackValue
+  return Math.round(clampNumber(sourceValue, SPACE_MIN, SPACE_MAX))
+}
+
+function getSafePixelSpace(value, fallback) {
+  return `${getSafeSpaceNumber(value, fallback)}px`
+}
+
 function sanitizeStudioTheme(theme) {
   const color = isPlainObject(theme?.color) ? theme.color : {}
   const radius = isPlainObject(theme?.radius) ? theme.radius : {}
+  const space = isPlainObject(theme?.space) ? theme.space : {}
 
   return {
     ...theme,
@@ -111,6 +133,15 @@ function sanitizeStudioTheme(theme) {
         EDITABLE_RADIUS_TOKENS.map((tokenName) => [
           tokenName,
           getSafePixelRadius(radius[tokenName], defaultTheme.radius[tokenName]),
+        ]),
+      ),
+    },
+    space: {
+      ...space,
+      ...Object.fromEntries(
+        EDITABLE_SPACE_TOKENS.map((tokenName) => [
+          tokenName,
+          getSafePixelSpace(space[tokenName], defaultTheme.space[tokenName]),
         ]),
       ),
     },
@@ -151,6 +182,10 @@ function isEditableRadiusToken(category, key) {
   return category === 'radius' && EDITABLE_RADIUS_TOKENS.includes(key)
 }
 
+function isEditableSpaceToken(category, key) {
+  return category === 'space' && EDITABLE_SPACE_TOKENS.includes(key)
+}
+
 function getOrderedColorEntries(colors) {
   const colorValues = isPlainObject(colors) ? colors : {}
   const entries = Object.entries(colorValues)
@@ -171,19 +206,34 @@ function getOrderedRadiusEntries(radius) {
   return [...editableEntries, ...remainingEntries]
 }
 
-function renderTokenRow(category, key, value, onColorChange, onRadiusChange) {
+function getOrderedSpaceEntries(space) {
+  const spaceValues = isPlainObject(space) ? space : {}
+  const entries = Object.entries(spaceValues)
+  const editableEntries = EDITABLE_SPACE_TOKENS
+    .filter((key) => Object.prototype.hasOwnProperty.call(spaceValues, key))
+    .map((key) => [key, spaceValues[key]])
+  const remainingEntries = entries.filter(([key]) => !EDITABLE_SPACE_TOKENS.includes(key))
+  return [...editableEntries, ...remainingEntries]
+}
+
+function renderTokenRow(category, key, value, onColorChange, onRadiusChange, onSpaceChange) {
   const isColor = category === 'color'
   const isRadius = category === 'radius'
+  const isSpace = category === 'space'
   const canEditColor = isEditableColorToken(category, key)
   const canEditRadius = isEditableRadiusToken(category, key)
-  const canEdit = canEditColor || canEditRadius
+  const canEditSpace = isEditableSpaceToken(category, key)
+  const canEdit = canEditColor || canEditRadius || canEditSpace
   const safeColor = isColor ? getSafeHexColor(value, defaultTheme.color[key]) : value
   const safeRadiusNumber = canEditRadius ? getSafeRadiusNumber(value, defaultTheme.radius[key]) : null
   const safeRadiusValue = canEditRadius ? `${safeRadiusNumber}px` : null
+  const safeSpaceNumber = canEditSpace ? getSafeSpaceNumber(value, defaultTheme.space[key]) : null
+  const safeSpaceValue = canEditSpace ? `${safeSpaceNumber}px` : null
   const className = [
     'studio-token-row',
     isColor && 'studio-token-row--color',
     isRadius && 'studio-token-row--radius',
+    isSpace && 'studio-token-row--space',
     canEdit && 'studio-token-row--editable',
   ].filter(Boolean).join(' ')
 
@@ -198,7 +248,11 @@ function renderTokenRow(category, key, value, onColorChange, onRadiusChange) {
       React.createElement('span', { className: 'studio-token-label', key: 'label' }, [
         React.createElement('span', { className: 'studio-token-key', key: 'key' }, key),
         canEdit && React.createElement('span', { className: 'studio-token-role', key: 'role' },
-          canEditColor ? COLOR_TOKEN_ROLES[key] : RADIUS_TOKEN_ROLES[key],
+          canEditColor
+            ? COLOR_TOKEN_ROLES[key]
+            : canEditRadius
+              ? RADIUS_TOKEN_ROLES[key]
+              : SPACE_TOKEN_ROLES[key],
         ),
       ]),
     ]),
@@ -240,21 +294,56 @@ function renderTokenRow(category, key, value, onColorChange, onRadiusChange) {
           }),
           React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeRadiusValue),
         ])
+        : canEditSpace
+          ? React.createElement('span', { className: 'studio-space-control', key: 'control' }, [
+            React.createElement('input', {
+              className: 'studio-space-range',
+              type: 'range',
+              min: SPACE_MIN,
+              max: SPACE_MAX,
+              step: 1,
+              value: safeSpaceNumber,
+              'aria-label': `${key} の余白`,
+              onChange: (event) => onSpaceChange(key, event.target.value),
+              key: 'range',
+            }),
+            React.createElement('input', {
+              className: 'studio-space-number',
+              type: 'number',
+              min: SPACE_MIN,
+              max: SPACE_MAX,
+              step: 1,
+              value: safeSpaceNumber,
+              'aria-label': `${key} の余白数値`,
+              onChange: (event) => onSpaceChange(key, event.target.value),
+              key: 'number',
+            }),
+            React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeSpaceValue),
+          ])
       : React.createElement('code', { className: 'studio-token-value', key: 'value' }, String(value)),
   ])
 }
 
-function renderCategory(category, values, onColorChange, onRadiusChange) {
+function renderCategory(category, values, onColorChange, onRadiusChange, onSpaceChange) {
   const entries = category === 'color'
     ? getOrderedColorEntries(values)
     : category === 'radius'
       ? getOrderedRadiusEntries(values)
-      : Object.entries(values || {})
+      : category === 'space'
+        ? getOrderedSpaceEntries(values)
+        : Object.entries(values || {})
 
   return React.createElement('section', { className: 'studio-token-group', key: category }, [
     React.createElement('h2', { key: 'heading' }, CATEGORY_LABELS[category] || category),
     React.createElement('ul', { className: 'studio-token-list', key: 'list' },
-      entries.map(([key, value]) => renderTokenRow(category, key, value, onColorChange, onRadiusChange)),
+      entries.map(([key, value]) => renderTokenRow(
+        category,
+        key,
+        value,
+        onColorChange,
+        onRadiusChange,
+        onSpaceChange,
+      )),
     ),
   ])
 }
@@ -295,6 +384,24 @@ export default function StudioPanel() {
           radius: {
             ...currentState.theme.radius,
             [tokenName]: safeRadius,
+          },
+        },
+      }
+    })
+  }, [])
+
+  const handleSpaceChange = useCallback((tokenName, value) => {
+    setFeedbackStatus(null)
+    setPanelState((currentState) => {
+      const currentSpace = isPlainObject(currentState.theme.space) ? currentState.theme.space : defaultTheme.space
+      const safeSpace = getSafePixelSpace(value, currentSpace[tokenName])
+      return {
+        ...currentState,
+        theme: {
+          ...currentState.theme,
+          space: {
+            ...currentSpace,
+            [tokenName]: safeSpace,
           },
         },
       }
@@ -390,6 +497,12 @@ export default function StudioPanel() {
         }, feedbackMessage),
       ]),
     ]),
-    ...Object.keys(CATEGORY_LABELS).map((category) => renderCategory(category, theme[category], handleColorChange, handleRadiusChange)),
+    ...Object.keys(CATEGORY_LABELS).map((category) => renderCategory(
+      category,
+      theme[category],
+      handleColorChange,
+      handleRadiusChange,
+      handleSpaceChange,
+    )),
   ])
 }
