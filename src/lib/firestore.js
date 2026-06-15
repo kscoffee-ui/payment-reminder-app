@@ -1,7 +1,7 @@
 import { collectionUrl, docUrl } from '../firebase'
 
-const POLL_INTERVAL_MS = 30000
-const QUOTA_BACKOFF_MS = 60000
+const POLL_INTERVAL_MS = 60000
+const QUOTA_ERROR_MESSAGE = '現在アクセスが集中しているため、少し時間をおいて再読み込みしてください。'
 
 function randomToken() {
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
@@ -47,8 +47,11 @@ async function request(url, options = {}) {
   const text = await res.text()
   const json = text ? JSON.parse(text) : {}
   if (!res.ok) {
-    const error = new Error(json?.error?.message || 'Firestore通信に失敗しました。')
+    const rawMessage = json?.error?.message || 'Firestore通信に失敗しました。'
+    const errorCode = json?.error?.status || json?.error?.code || ''
+    const error = new Error(isQuotaLikeError(res.status, rawMessage, errorCode) ? QUOTA_ERROR_MESSAGE : rawMessage)
     error.status = res.status
+    error.code = errorCode
     throw error
   }
   return json
@@ -91,82 +94,135 @@ export async function getEvent(eventId) {
   return fromDoc(json)
 }
 
-function isQuotaError(error) {
-  const message = String(error?.message || '').toLowerCase()
-  return error?.status === 429
-    || message.includes('quota exceeded')
-    || message.includes('resource exhausted')
-    || message.includes('resource_exhausted')
-    || message.includes('too many requests')
+function isQuotaLikeError(status, message, code) {
+  const lowerMessage = String(message || '').toLowerCase()
+  const lowerCode = String(code || '').toLowerCase()
+  return status === 429
+    || lowerCode.includes('resource_exhausted')
+    || lowerCode.includes('quota')
+    || lowerMessage.includes('quota exceeded')
+    || lowerMessage.includes('resource exhausted')
+    || lowerMessage.includes('resource_exhausted')
+    || lowerMessage.includes('too many requests')
 }
 
-function poller(load, onData, onError) {
+function isQuotaError(error) {
+  return isQuotaLikeError(error?.status, error?.message, error?.code)
+}
+
+function poller(load, onData, onError, options = {}) {
+  const intervalMs = options.intervalMs || POLL_INTERVAL_MS
+  const immediate = options.immediate !== false
+  // Firestore read節約のため、タブ非表示中やオフライン中はpollingを止める
   let active = true
   let timerId = null
+  let quotaStopped = false
 
   const isDocumentHidden = () => typeof document !== 'undefined' && document.hidden
+  const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false
+  const shouldPause = () => isDocumentHidden() || isOffline() || quotaStopped
+
+  const clearTimer = () => {
+    if (!timerId) return
+    clearTimeout(timerId)
+    timerId = null
+  }
 
   const schedule = (delay) => {
-    if (!active) return
+    clearTimer()
+    if (!active || shouldPause()) return
     timerId = setTimeout(tick, delay)
   }
 
   const tick = async () => {
-    if (!active) return
-    if (isDocumentHidden()) return
+    clearTimer()
+    if (!active || shouldPause()) return
     try {
       const data = await load()
+      if (!active) return
       onData(data)
-      schedule(POLL_INTERVAL_MS)
+      schedule(intervalMs)
     } catch (e) {
+      if (!active) return
       if (isQuotaError(e)) {
-        schedule(QUOTA_BACKOFF_MS)
+        quotaStopped = true
+        clearTimer()
+        onError?.(e)
         return
       }
       onError?.(e)
-      schedule(POLL_INTERVAL_MS)
+      schedule(intervalMs)
     }
   }
 
-  const handleVisibilityChange = () => {
-    if (!active || isDocumentHidden()) return
-    if (timerId) {
-      clearTimeout(timerId)
-      timerId = null
-    }
+  const pause = () => {
+    clearTimer()
+  }
+
+  const resume = () => {
+    if (!active || quotaStopped) return
     tick()
+  }
+
+  const handleVisibilityChange = () => {
+    if (isDocumentHidden()) {
+      pause()
+      return
+    }
+    resume()
+  }
+
+  const handleOnline = () => {
+    resume()
+  }
+
+  const handleOffline = () => {
+    pause()
   }
 
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', handleVisibilityChange)
   }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+  }
 
-  tick()
+  if (immediate) {
+    tick()
+  } else {
+    schedule(intervalMs)
+  }
+
   return () => {
     active = false
-    if (timerId) clearTimeout(timerId)
+    clearTimer()
     if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
     }
   }
 }
 
-export function subscribeEvent(eventId, onData, onError) {
-  return poller(() => getEvent(eventId), onData, onError)
+export function subscribeEvent(eventId, onData, onError, options) {
+  return poller(() => getEvent(eventId), onData, onError, options)
 }
 
-export function subscribeMembers(eventId, onData, onError) {
+export function subscribeMembers(eventId, onData, onError, options) {
   return poller(async () => {
     const json = await request(collectionUrl(`events/${eventId}/members`))
     return (json.documents || []).map(fromDoc)
-  }, onData, onError)
+  }, onData, onError, options)
 }
 
-export function subscribeMember(eventId, memberId, onData, onError) {
+export function subscribeMember(eventId, memberId, onData, onError, options) {
   return poller(async () => {
     const json = await request(docUrl(`events/${eventId}/members/${memberId}`))
     return fromDoc(json)
-  }, onData, onError)
+  }, onData, onError, options)
 }
 
 export async function joinEvent({ eventId, name, paymentMethod }) {
