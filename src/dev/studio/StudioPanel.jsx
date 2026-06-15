@@ -42,6 +42,14 @@ const FONT_SIZE_LIMITS = {
   button: { min: 13, max: 18, defaultValue: 16 },
 }
 
+const EDITABLE_SHADOW_TOKENS = ['card', 'subtle']
+const SHADOW_MIN = 0
+const SHADOW_MAX = 24
+const SHADOW_DEFAULT_STRENGTH = {
+  card: 10,
+  subtle: 4,
+}
+
 const COLOR_TOKEN_ROLES = {
   primary: '通常CTA / 進捗 / リンク',
   unpaid: '未払い。赤系で最も目立たせる',
@@ -72,6 +80,11 @@ const SIZE_TOKEN_ROLES = {
 const FONT_SIZE_TOKEN_ROLES = {
   badge: 'StatusBadgeの文字サイズ',
   button: 'KaishuruButton / 主要ボタンの文字サイズ',
+}
+
+const SHADOW_TOKEN_ROLES = {
+  card: '通常カードの影',
+  subtle: '控えめな影',
 }
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
@@ -170,12 +183,51 @@ function getSafeFontSizeValue(tokenName, value) {
   return getSafePixelFontSize(value, defaultValue, tokenName)
 }
 
+function getShadowDefaultStrength(tokenName) {
+  return SHADOW_DEFAULT_STRENGTH[tokenName] ?? 0
+}
+
+function getShadowStrength(value) {
+  if (typeof value === 'number') return value
+  if (typeof value !== 'string') return Number.NaN
+  const normalized = value.trim()
+  if (normalized === 'none') return 0
+  if (/^\d+(\.\d+)?$/.test(normalized)) return Number.parseFloat(normalized)
+  const firstPixelValue = normalized.match(/-?\d+(\.\d+)?px/)
+  return firstPixelValue ? Number.parseFloat(firstPixelValue[0]) : Number.NaN
+}
+
+function getSafeShadowStrength(value, fallback, tokenName) {
+  const parsedValue = getShadowStrength(value)
+  const parsedFallback = getShadowStrength(fallback)
+  const fallbackValue = Number.isFinite(parsedFallback) ? parsedFallback : getShadowDefaultStrength(tokenName)
+  const sourceValue = Number.isFinite(parsedValue) ? parsedValue : fallbackValue
+  return Math.round(clampNumber(sourceValue, SHADOW_MIN, SHADOW_MAX))
+}
+
+function buildShadowValue(tokenName, strength) {
+  if (strength <= 0) return 'none'
+  const blur = strength * 3
+  const opacity = tokenName === 'subtle'
+    ? Math.min(8, Math.max(1, Math.round(strength)))
+    : Math.min(12, Math.max(1, Math.round(strength * 0.7)))
+  return `0 ${strength}px ${blur}px rgb(15 23 42 / ${opacity}%)`
+}
+
+function getSafeShadowValue(tokenName, value) {
+  const defaultValue = defaultTheme.shadow[tokenName]
+  if (value === defaultValue) return defaultValue
+  const strength = getSafeShadowStrength(value, defaultValue, tokenName)
+  return buildShadowValue(tokenName, strength)
+}
+
 function sanitizeStudioTheme(theme) {
   const color = isPlainObject(theme?.color) ? theme.color : {}
   const radius = isPlainObject(theme?.radius) ? theme.radius : {}
   const space = isPlainObject(theme?.space) ? theme.space : {}
   const fontSize = isPlainObject(theme?.fontSize) ? theme.fontSize : {}
   const size = isPlainObject(theme?.size) ? theme.size : {}
+  const shadow = isPlainObject(theme?.shadow) ? theme.shadow : {}
 
   return {
     ...theme,
@@ -221,6 +273,15 @@ function sanitizeStudioTheme(theme) {
         EDITABLE_SIZE_TOKENS.map((tokenName) => [
           tokenName,
           getSafePixelSize(size[tokenName], defaultTheme.size[tokenName]),
+        ]),
+      ),
+    },
+    shadow: {
+      ...shadow,
+      ...Object.fromEntries(
+        EDITABLE_SHADOW_TOKENS.map((tokenName) => [
+          tokenName,
+          getSafeShadowValue(tokenName, shadow[tokenName]),
         ]),
       ),
     },
@@ -273,6 +334,10 @@ function isEditableFontSizeToken(category, key) {
   return category === 'fontSize' && EDITABLE_FONT_SIZE_TOKENS.includes(key)
 }
 
+function isEditableShadowToken(category, key) {
+  return category === 'shadow' && EDITABLE_SHADOW_TOKENS.includes(key)
+}
+
 function getOrderedColorEntries(colors) {
   const colorValues = isPlainObject(colors) ? colors : {}
   const entries = Object.entries(colorValues)
@@ -323,6 +388,16 @@ function getOrderedFontSizeEntries(fontSize) {
   return [...editableEntries, ...remainingEntries]
 }
 
+function getOrderedShadowEntries(shadow) {
+  const shadowValues = isPlainObject(shadow) ? shadow : {}
+  const entries = Object.entries(shadowValues)
+  const editableEntries = EDITABLE_SHADOW_TOKENS
+    .filter((key) => Object.prototype.hasOwnProperty.call(shadowValues, key))
+    .map((key) => [key, shadowValues[key]])
+  const remainingEntries = entries.filter(([key]) => !EDITABLE_SHADOW_TOKENS.includes(key))
+  return [...editableEntries, ...remainingEntries]
+}
+
 function renderTokenRow(
   category,
   key,
@@ -332,18 +407,21 @@ function renderTokenRow(
   onSpaceChange,
   onSizeChange,
   onFontSizeChange,
+  onShadowChange,
 ) {
   const isColor = category === 'color'
   const isRadius = category === 'radius'
   const isSpace = category === 'space'
   const isSize = category === 'size'
   const isFontSize = category === 'fontSize'
+  const isShadow = category === 'shadow'
   const canEditColor = isEditableColorToken(category, key)
   const canEditRadius = isEditableRadiusToken(category, key)
   const canEditSpace = isEditableSpaceToken(category, key)
   const canEditSize = isEditableSizeToken(category, key)
   const canEditFontSize = isEditableFontSizeToken(category, key)
-  const canEdit = canEditColor || canEditRadius || canEditSpace || canEditSize || canEditFontSize
+  const canEditShadow = isEditableShadowToken(category, key)
+  const canEdit = canEditColor || canEditRadius || canEditSpace || canEditSize || canEditFontSize || canEditShadow
   const safeColor = isColor ? getSafeHexColor(value, defaultTheme.color[key]) : value
   const safeRadiusNumber = canEditRadius ? getSafeRadiusNumber(value, defaultTheme.radius[key]) : null
   const safeRadiusValue = canEditRadius ? `${safeRadiusNumber}px` : null
@@ -355,6 +433,10 @@ function renderTokenRow(
     ? getSafeFontSizeNumber(value, defaultTheme.fontSize[key], key)
     : null
   const safeFontSizeValue = canEditFontSize ? `${safeFontSizeNumber}px` : null
+  const safeShadowStrength = canEditShadow
+    ? getSafeShadowStrength(value, defaultTheme.shadow[key], key)
+    : null
+  const safeShadowValue = canEditShadow ? getSafeShadowValue(key, value) : null
   const className = [
     'studio-token-row',
     isColor && 'studio-token-row--color',
@@ -362,6 +444,7 @@ function renderTokenRow(
     isSpace && 'studio-token-row--space',
     isSize && 'studio-token-row--size',
     isFontSize && 'studio-token-row--font-size',
+    isShadow && 'studio-token-row--shadow',
     canEdit && 'studio-token-row--editable',
   ].filter(Boolean).join(' ')
 
@@ -383,8 +466,10 @@ function renderTokenRow(
               : canEditSpace
                 ? SPACE_TOKEN_ROLES[key]
                 : canEditSize
-                  ? SIZE_TOKEN_ROLES[key]
-                  : FONT_SIZE_TOKEN_ROLES[key],
+                ? SIZE_TOKEN_ROLES[key]
+                  : canEditFontSize
+                    ? FONT_SIZE_TOKEN_ROLES[key]
+                    : SHADOW_TOKEN_ROLES[key],
         ),
       ]),
     ]),
@@ -504,6 +589,32 @@ function renderTokenRow(
                 }),
                 React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeFontSizeValue),
               ])
+              : canEditShadow
+                ? React.createElement('span', { className: 'studio-shadow-control', key: 'control' }, [
+                  React.createElement('input', {
+                    className: 'studio-shadow-range',
+                    type: 'range',
+                    min: SHADOW_MIN,
+                    max: SHADOW_MAX,
+                    step: 1,
+                    value: safeShadowStrength,
+                    'aria-label': `${key} の影の強さ`,
+                    onChange: (event) => onShadowChange(key, event.target.value),
+                    key: 'range',
+                  }),
+                  React.createElement('input', {
+                    className: 'studio-shadow-number',
+                    type: 'number',
+                    min: SHADOW_MIN,
+                    max: SHADOW_MAX,
+                    step: 1,
+                    value: safeShadowStrength,
+                    'aria-label': `${key} の影の強さ数値`,
+                    onChange: (event) => onShadowChange(key, event.target.value),
+                    key: 'number',
+                  }),
+                  React.createElement('code', { className: 'studio-token-value', key: 'value' }, safeShadowValue),
+                ])
       : React.createElement('code', { className: 'studio-token-value', key: 'value' }, String(value)),
   ])
 }
@@ -516,6 +627,7 @@ function renderCategory(
   onSpaceChange,
   onSizeChange,
   onFontSizeChange,
+  onShadowChange,
 ) {
   const entries = category === 'color'
     ? getOrderedColorEntries(values)
@@ -527,7 +639,9 @@ function renderCategory(
           ? getOrderedSizeEntries(values)
           : category === 'fontSize'
             ? getOrderedFontSizeEntries(values)
-            : Object.entries(values || {})
+            : category === 'shadow'
+              ? getOrderedShadowEntries(values)
+              : Object.entries(values || {})
 
   return React.createElement('section', { className: 'studio-token-group', key: category }, [
     React.createElement('h2', { key: 'heading' }, CATEGORY_LABELS[category] || category),
@@ -541,6 +655,7 @@ function renderCategory(
         onSpaceChange,
         onSizeChange,
         onFontSizeChange,
+        onShadowChange,
       )),
     ),
   ])
@@ -644,6 +759,24 @@ export default function StudioPanel() {
     })
   }, [])
 
+  const handleShadowChange = useCallback((tokenName, value) => {
+    setFeedbackStatus(null)
+    setPanelState((currentState) => {
+      const currentShadow = isPlainObject(currentState.theme.shadow) ? currentState.theme.shadow : defaultTheme.shadow
+      const safeShadow = getSafeShadowValue(tokenName, value)
+      return {
+        ...currentState,
+        theme: {
+          ...currentState.theme,
+          shadow: {
+            ...currentShadow,
+            [tokenName]: safeShadow,
+          },
+        },
+      }
+    })
+  }, [])
+
   const handleSaveTheme = useCallback(() => {
     const safeTheme = sanitizeStudioTheme(theme)
     const succeeded = saveTheme(safeTheme)
@@ -741,6 +874,7 @@ export default function StudioPanel() {
       handleSpaceChange,
       handleSizeChange,
       handleFontSizeChange,
+      handleShadowChange,
     )),
   ])
 }

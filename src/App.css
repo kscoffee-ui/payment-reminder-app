@@ -1897,7 +1897,8 @@ textarea {
 .studio-token-row--radius,
 .studio-token-row--space,
 .studio-token-row--size,
-.studio-token-row--font-size {
+.studio-token-row--font-size,
+.studio-token-row--shadow {
   grid-template-columns: minmax(0, 1fr) minmax(142px, 56%);
 }
 
@@ -1941,7 +1942,8 @@ textarea {
 .studio-radius-control,
 .studio-space-control,
 .studio-size-control,
-.studio-font-size-control {
+.studio-font-size-control,
+.studio-shadow-control {
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(72px, 1fr) 52px auto;
@@ -1952,7 +1954,8 @@ textarea {
 .studio-radius-range,
 .studio-space-range,
 .studio-size-range,
-.studio-font-size-range {
+.studio-font-size-range,
+.studio-shadow-range {
   width: 100%;
   min-height: 28px;
   accent-color: var(--ks-color-primary, #2563eb);
@@ -1961,7 +1964,8 @@ textarea {
 .studio-radius-number,
 .studio-space-number,
 .studio-size-number,
-.studio-font-size-number {
+.studio-font-size-number,
+.studio-shadow-number {
   width: 52px;
   min-height: 34px;
   border: 1px solid var(--ks-color-border, #e2e8f0);
