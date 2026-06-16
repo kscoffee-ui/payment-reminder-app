@@ -2100,7 +2100,7 @@ textarea {
   display: grid;
   align-content: start;
   gap: 14px;
-  padding: 18px 14px 22px;
+  padding: 18px 14px 28px;
 }
 
 .studio-preview-app-header {
@@ -2119,8 +2119,8 @@ textarea {
   background: var(--ks-color-surface, #fff);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  padding: 8px 8px 10px;
+  gap: 6px;
+  padding: 9px 8px 11px;
   box-shadow: 0 -6px 18px rgb(15 23 42 / 5%);
 }
 
@@ -2132,12 +2132,12 @@ textarea {
   cursor: pointer;
   display: grid;
   justify-items: center;
-  gap: 3px;
-  min-height: 52px;
+  gap: 4px;
+  min-height: 54px;
   padding: 6px 4px;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .studio-preview-tab--active {
@@ -2160,15 +2160,15 @@ textarea {
   min-width: 0;
   display: grid;
   justify-items: end;
-  gap: 5px;
+  gap: 6px;
 }
 
 .studio-member-confirm-button {
-  min-height: 32px;
-  min-width: 86px;
+  min-height: 34px;
+  min-width: 92px;
   border-radius: var(--ks-radius-pill, 999px);
-  padding: 5px 10px;
-  font-size: 0.74rem;
+  padding: 6px 11px;
+  font-size: 0.76rem;
 }
 
 .studio-preview-phone .member-list-item--unpaid .member-avatar {
@@ -2212,11 +2212,11 @@ textarea {
 .studio-url-row {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 5px;
   border: 1px solid var(--ks-color-border, #e2e8f0);
   border-radius: var(--ks-radius-control, 12px);
   background: var(--ks-color-background, #f8fafc);
-  padding: 8px 10px;
+  padding: 9px 10px;
 }
 
 .studio-url-row span {
@@ -2243,7 +2243,7 @@ textarea {
 }
 
 .studio-share-button {
-  min-height: 42px;
+  min-height: 44px;
   font-size: 0.84rem;
 }
 

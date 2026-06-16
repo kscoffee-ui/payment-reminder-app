@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import {
   Bell,
   Calendar,
@@ -273,14 +273,22 @@ export default function StudioPreview({
   members = studioSampleMembers,
 } = {}) {
   const [activeTab, setActiveTab] = useState('dashboard')
+  const scrollRef = useRef(null)
   const counts = getStatusCounts(members)
   const total = members.length
   const confirmedRate = total ? Math.round((counts.confirmed / total) * 100) : 0
 
+  function switchPreviewTab(tabId) {
+    setActiveTab(tabId)
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0
+    }
+  }
+
   // Firestore ではなく sampleData の状態だけで、本体adminに近いプレビューを描く
   return (
     <section className="studio-preview-phone" aria-label="スマホプレビュー">
-      <div className="studio-preview-scroll">
+      <div className="studio-preview-scroll" ref={scrollRef}>
         <PreviewHeader counts={counts} />
         {activeTab === 'dashboard' && (
           <DashboardPreview event={event} members={members} counts={counts} confirmedRate={confirmedRate} />
@@ -300,7 +308,7 @@ export default function StudioPreview({
               className={`studio-preview-tab ${isActive ? 'studio-preview-tab--active' : ''}`}
               role="tab"
               aria-selected={isActive}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => switchPreviewTab(tab.id)}
               key={tab.id}
             >
               <Icon size={19} strokeWidth={2.4} aria-hidden="true" />
