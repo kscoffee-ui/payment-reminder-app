@@ -276,6 +276,7 @@ function AdminPage({ eventId, token }) {
   const [activeReportMemberId, setActiveReportMemberId] = useState('')
   const [openReportActionMemberId, setOpenReportActionMemberId] = useState('')
   const [returnToUnpaidMember, setReturnToUnpaidMember] = useState(null)
+  const [reportsSearchQuery, setReportsSearchQuery] = useState('')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [settingsEditing, setSettingsEditing] = useState(false)
@@ -356,6 +357,14 @@ function AdminPage({ eventId, token }) {
     () => safeMembers.find((member) => member.id === activeReportMemberId) || null,
     [activeReportMemberId, safeMembers],
   )
+
+  const visibleReportedMembers = useMemo(() => {
+    const query = reportsSearchQuery.trim().toLowerCase()
+    return counts.reportedMembers.filter((member) => {
+      if (!query) return true
+      return String(member.name || '').toLowerCase().includes(query)
+    })
+  }, [counts.reportedMembers, reportsSearchQuery])
 
   const reminderMessage = useMemo(() => {
     if (!event) return ''
@@ -745,13 +754,31 @@ function AdminPage({ eventId, token }) {
           <p className="reports-ios-lead">支払い報告が届いています。内容を確認して「確認済み」にしてください。</p>
         </div>
 
+        <label className="member-search">
+          <Search size={19} strokeWidth={2.4} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="名前で検索"
+            value={reportsSearchQuery}
+            onChange={(event) => {
+              setReportsSearchQuery(event.target.value)
+              setOpenReportActionMemberId('')
+            }}
+          />
+        </label>
+
+        <div className="status-pill-row member-filter-row" role="tablist" aria-label="確認待ちステータス">
+          <button type="button" className="status-pill pill-reported pill-active">確認待ち {counts.reportedMembers.length}人</button>
+        </div>
+
         {counts.reportedMembers.length > 0 ? (
           <>
             {openReportActionMemberId && (
               <button type="button" className="report-action-backdrop" aria-label="操作メニューを閉じる" onClick={() => setOpenReportActionMemberId('')} />
             )}
-            <ul className="member-list reports-inbox-list">
-              {counts.reportedMembers.map((member) => (
+            {visibleReportedMembers.length > 0 ? (
+              <ul className="member-list reports-inbox-list">
+              {visibleReportedMembers.map((member) => (
                 <li key={member.id} className={`member-list-item member-list-item--reported reports-inbox-item ${openReportActionMemberId === member.id ? 'reports-inbox-item--menu-open' : ''}`}>
                   <details className="member-list-details reports-member-details">
                     <summary
@@ -840,6 +867,9 @@ function AdminPage({ eventId, token }) {
                 </li>
               ))}
             </ul>
+            ) : (
+              <p className="member-empty">該当する確認待ちはありません。</p>
+            )}
           </>
         ) : (
           <div className="card reports-empty-card">
