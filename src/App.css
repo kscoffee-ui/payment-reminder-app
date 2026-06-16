@@ -1824,9 +1824,51 @@ textarea {
   padding-top: 12px;
 }
 
-.studio-token-group h2 {
+.studio-token-group-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  text-align: left;
+}
+
+.studio-token-group-toggle:focus-visible {
+  outline: 2px solid var(--ks-color-primary, #2563eb);
+  outline-offset: 3px;
+  border-radius: var(--ks-radius-control, 12px);
+}
+
+.studio-token-group-title {
+  color: var(--ks-color-text, #0f172a);
   font-size: 0.92rem;
   font-weight: 800;
+}
+
+.studio-token-group-meta {
+  color: var(--ks-color-text-muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.studio-token-group-icon {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-pill, 999px);
+  color: var(--ks-color-primary, #2563eb);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .studio-token-list {

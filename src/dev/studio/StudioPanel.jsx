@@ -12,6 +12,10 @@ const CATEGORY_LABELS = {
   shadow: 'Shadow',
 }
 
+const DEFAULT_OPEN_CATEGORIES = Object.fromEntries(
+  Object.keys(CATEGORY_LABELS).map((category) => [category, category === 'color']),
+)
+
 const EDITABLE_COLOR_TOKENS = [
   'primary',
   'unpaid',
@@ -622,6 +626,8 @@ function renderTokenRow(
 function renderCategory(
   category,
   values,
+  isOpen,
+  onToggleCategory,
   onColorChange,
   onRadiusChange,
   onSpaceChange,
@@ -641,11 +647,31 @@ function renderCategory(
             ? getOrderedFontSizeEntries(values)
             : category === 'shadow'
               ? getOrderedShadowEntries(values)
-              : Object.entries(values || {})
+            : Object.entries(values || {})
 
-  return React.createElement('section', { className: 'studio-token-group', key: category }, [
-    React.createElement('h2', { key: 'heading' }, CATEGORY_LABELS[category] || category),
-    React.createElement('ul', { className: 'studio-token-list', key: 'list' },
+  return React.createElement('section', {
+    className: [
+      'studio-token-group',
+      isOpen && 'studio-token-group--open',
+    ].filter(Boolean).join(' '),
+    key: category,
+  }, [
+    React.createElement('button', {
+      className: 'studio-token-group-toggle',
+      type: 'button',
+      'aria-expanded': isOpen,
+      onClick: () => onToggleCategory(category),
+      key: 'heading',
+    }, [
+      React.createElement('span', { className: 'studio-token-group-title', key: 'title' },
+        CATEGORY_LABELS[category] || category,
+      ),
+      React.createElement('span', { className: 'studio-token-group-meta', key: 'meta' }, `${entries.length}項目`),
+      React.createElement('span', { className: 'studio-token-group-icon', 'aria-hidden': 'true', key: 'icon' },
+        isOpen ? '-' : '+',
+      ),
+    ]),
+    isOpen && React.createElement('ul', { className: 'studio-token-list', key: 'list' },
       entries.map(([key, value]) => renderTokenRow(
         category,
         key,
@@ -663,6 +689,7 @@ function renderCategory(
 
 export default function StudioPanel() {
   const [{ theme, hasSavedTheme }, setPanelState] = useState(createPanelState)
+  const [openCategories, setOpenCategories] = useState(DEFAULT_OPEN_CATEGORIES)
   const [feedbackStatus, setFeedbackStatus] = useState(null)
 
   useEffect(() => {
@@ -816,6 +843,13 @@ export default function StudioPanel() {
     }
   }, [theme])
 
+  const handleToggleCategory = useCallback((category) => {
+    setOpenCategories((currentState) => ({
+      ...currentState,
+      [category]: !currentState[category],
+    }))
+  }, [])
+
   const feedbackMessage = {
     'save-success': '保存しました',
     'save-error': '保存できませんでした',
@@ -869,6 +903,8 @@ export default function StudioPanel() {
     ...Object.keys(CATEGORY_LABELS).map((category) => renderCategory(
       category,
       theme[category],
+      Boolean(openCategories[category]),
+      handleToggleCategory,
       handleColorChange,
       handleRadiusChange,
       handleSpaceChange,
