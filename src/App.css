@@ -2268,6 +2268,41 @@ textarea {
   min-height: var(--ks-size-button-large-min-height, 54px);
 }
 
+.studio-report-detail-screen {
+  gap: 12px;
+}
+
+.studio-preview-phone .report-detail-card {
+  background: var(--ks-color-reported-bg, #fff7ed);
+  border-color: var(--ks-color-reported-border, #fed7aa);
+  border-radius: var(--ks-radius-card, 20px);
+  box-shadow: var(--ks-shadow-card, 0 10px 30px rgb(15 23 42 / 7%));
+  padding: var(--ks-space-card-y, 18px) var(--ks-space-card-x, 16px);
+}
+
+.studio-preview-phone .report-detail-grid p,
+.studio-preview-phone .report-detail-memo {
+  border-color: var(--ks-color-reported-border, #fed7aa);
+  border-radius: var(--ks-radius-control, 12px);
+  background: var(--ks-color-surface, #fff);
+}
+
+.studio-preview-phone .report-detail-status {
+  background: var(--ks-color-reported-bg, #fff7ed);
+  color: var(--ks-color-reported-text, #9a3412);
+}
+
+.studio-preview-phone .report-confirm-button {
+  background: var(--ks-color-confirmed, #16a34a);
+  min-height: var(--ks-size-button-large-min-height, 54px);
+  border-radius: var(--ks-radius-control, 12px);
+  font-size: var(--ks-font-size-button, 1rem);
+}
+
+.studio-report-payment-info p {
+  color: var(--ks-color-text, #0f172a);
+}
+
 .studio-url-list {
   display: grid;
   gap: 7px;

@@ -293,7 +293,7 @@ function SettingsPreview({ event }) {
   )
 }
 
-function ReportsInboxPreview({ event, members, onBack }) {
+function ReportsInboxPreview({ event, members, onBack, onReportOpen }) {
   return (
     <section className="reports-inbox-screen studio-reports-screen">
       <div className="reports-ios-header">
@@ -332,7 +332,13 @@ function ReportsInboxPreview({ event, members, onBack }) {
           {members.map((member) => (
             <li key={member.id} className="member-list-item member-list-item--reported reports-inbox-item">
               <details className="reports-inbox-button">
-                <summary className="member-list-row reports-member-row studio-reports-member-row">
+                <summary
+                  className="member-list-row reports-member-row studio-reports-member-row"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    onReportOpen(member.id)
+                  }}
+                >
                   <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
                   <span className="reports-member-main">
                     <span className="reports-member-name">{member.name || '名前未設定'}</span>
@@ -344,7 +350,16 @@ function ReportsInboxPreview({ event, members, onBack }) {
                   </span>
                   <StatusBadge status="reported" className="reports-status-badge" />
                   <span className="reports-action-wrap">
-                    <button type="button" className="reports-action-trigger" aria-label={`${member.name || '名前未設定'}の確認メニュー`}>
+                    <button
+                      type="button"
+                      className="reports-action-trigger"
+                      aria-label={`${member.name || '名前未設定'}の詳細を開く`}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        onReportOpen(member.id)
+                      }}
+                    >
                       <MoreVertical size={17} strokeWidth={2.4} aria-hidden="true" />
                     </button>
                   </span>
@@ -384,17 +399,77 @@ function ReportsInboxPreview({ event, members, onBack }) {
   )
 }
 
+function ReportDetailPreview({ event, member, onBack }) {
+  return (
+    <section className="report-detail-screen studio-report-detail-screen">
+      <div className="reports-screen-header">
+        <button type="button" className="reports-back-button" aria-label="確認待ち一覧へ戻る" onClick={onBack}>
+          <ArrowLeft size={21} strokeWidth={2.4} aria-hidden="true" />
+        </button>
+        <div className="reports-screen-title">
+          <p>報告詳細</p>
+          <h1>支払い確認</h1>
+        </div>
+      </div>
+
+      {!member ? (
+        <div className="card report-detail-card report-detail-processed">
+          <h2>対象が見つかりません</h2>
+          <p className="sub">確認待ち一覧に戻って、最新の報告を確認してください。</p>
+          <KaishuruButton variant="secondary" className="btn-lg" onClick={onBack}>確認待ち一覧へ戻る</KaishuruButton>
+        </div>
+      ) : (
+        <div className="card report-detail-card">
+          <div className="report-detail-profile">
+            <span className="reports-member-avatar reports-member-avatar--large" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+            <div>
+              <h2>{member.name || '名前未設定'}</h2>
+              <p className="sub">{formatUpdatedAt(member)}</p>
+            </div>
+            <StatusBadge status="reported" className="report-detail-status" />
+          </div>
+
+          <div className="report-detail-grid">
+            <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+            <p><span>支払い状態</span><b>確認待ち</b></p>
+            <p><span>報告日時</span><b>{formatReportedAt(member)}</b></p>
+            <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod || event.paymentMethod)}</b></p>
+          </div>
+
+          <div className="report-detail-memo">
+            <span>報告メモ</span>
+            <p>{member.proofMemo || 'なし'}</p>
+          </div>
+
+          {event.paymentInfo && (
+            <div className="report-detail-memo studio-report-payment-info">
+              <span>支払い案内</span>
+              <p>{event.paymentInfo}</p>
+            </div>
+          )}
+
+          <KaishuruButton variant="confirm" className="btn-lg report-confirm-button">
+            確認する
+          </KaishuruButton>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function StudioPreview({
   event = studioSampleEvent,
   members = studioSampleMembers,
 } = {}) {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeSubscreen, setActiveSubscreen] = useState(null)
+  const [activeReportMemberId, setActiveReportMemberId] = useState('')
   const scrollRef = useRef(null)
   const counts = getStatusCounts(members)
   const total = members.length
   const confirmedRate = total ? Math.round((counts.confirmed / total) * 100) : 0
   const reportedMembers = members.filter((member) => member.status === 'reported')
+  const activeReportMember = reportedMembers.find((member) => member.id === activeReportMemberId) || null
 
   function resetPreviewScroll() {
     if (scrollRef.current) {
@@ -405,18 +480,35 @@ export default function StudioPreview({
   function switchPreviewTab(tabId) {
     setActiveTab(tabId)
     setActiveSubscreen(null)
+    setActiveReportMemberId('')
     resetPreviewScroll()
   }
 
   function openReportsInbox() {
     setActiveTab('dashboard')
     setActiveSubscreen('reports')
+    setActiveReportMemberId('')
+    resetPreviewScroll()
+  }
+
+  function openReportDetail(memberId) {
+    setActiveTab('dashboard')
+    setActiveSubscreen('reportDetail')
+    setActiveReportMemberId(memberId)
+    resetPreviewScroll()
+  }
+
+  function backToReportsInbox() {
+    setActiveTab('dashboard')
+    setActiveSubscreen('reports')
+    setActiveReportMemberId('')
     resetPreviewScroll()
   }
 
   function backToDashboard() {
     setActiveTab('dashboard')
     setActiveSubscreen(null)
+    setActiveReportMemberId('')
     resetPreviewScroll()
   }
 
@@ -430,7 +522,14 @@ export default function StudioPreview({
           showReportsButton={activeTab === 'dashboard' && activeSubscreen !== 'reports'}
         />
         {activeSubscreen === 'reports' ? (
-          <ReportsInboxPreview event={event} members={reportedMembers} onBack={backToDashboard} />
+          <ReportsInboxPreview
+            event={event}
+            members={reportedMembers}
+            onBack={backToDashboard}
+            onReportOpen={openReportDetail}
+          />
+        ) : activeSubscreen === 'reportDetail' ? (
+          <ReportDetailPreview event={event} member={activeReportMember} onBack={backToReportsInbox} />
         ) : (
           <>
             {activeTab === 'dashboard' && (
@@ -445,7 +544,7 @@ export default function StudioPreview({
       <nav className="studio-preview-bottom-tabs" role="tablist" aria-label="スマホプレビュー画面切り替え">
         {PREVIEW_TABS.map((tab) => {
           const Icon = tab.icon
-          const isActive = activeSubscreen === 'reports' ? tab.id === 'dashboard' : activeTab === tab.id
+          const isActive = activeSubscreen ? tab.id === 'dashboard' : activeTab === tab.id
 
           return (
             <button
