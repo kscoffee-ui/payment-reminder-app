@@ -28,13 +28,13 @@ export const defaultTheme = {
     dangerBg: '#fee2e2',
   },
   radius: {
-    card: '20px',
+    card: '10px',
     cardCompact: '14px',
-    control: '12px',
+    control: '10px',
     pill: '999px',
   },
   space: {
-    cardY: '18px',
+    cardY: '13px',
     cardX: '16px',
     controlY: '10px',
     controlX: '14px',
@@ -42,7 +42,7 @@ export const defaultTheme = {
   },
   shadow: {
     card: '0 10px 30px rgb(15 23 42 / 7%)',
-    subtle: '0 4px 12px rgb(15 23 42 / 4%)',
+    subtle: '0 10px 30px rgb(15 23 42 / 8%)',
     nav: '0 -8px 24px rgb(15 23 42 / 8%)',
     line: '0 3px 8px rgb(6 199 85 / 12%)',
   },
