@@ -2152,8 +2152,13 @@ textarea {
 }
 
 .studio-member-row {
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 38px minmax(0, 1fr) auto 18px;
   cursor: default;
+}
+
+.studio-preview-phone .member-search input,
+.studio-preview-phone .reports-search-field input {
+  pointer-events: none;
 }
 
 .studio-member-actions {
@@ -2202,6 +2207,65 @@ textarea {
 .studio-preview-settings .settings-summary-label,
 .studio-preview-settings .settings-summary-icon {
   color: var(--ks-color-primary, #2563eb);
+}
+
+.studio-preview-settings .settings-edit-trigger {
+  border-color: var(--ks-color-primary, #2563eb);
+  color: var(--ks-color-primary, #2563eb);
+}
+
+.studio-preview-settings .participant-share-card {
+  background: var(--ks-color-surface, #fff);
+  border-color: var(--ks-color-border, #e2e8f0);
+}
+
+.studio-reports-screen {
+  gap: 10px;
+}
+
+.studio-preview-phone .reports-inbox-list {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  display: grid;
+  gap: 8px;
+  overflow: visible;
+}
+
+.studio-preview-phone .reports-inbox-item {
+  border-bottom: 0;
+}
+
+.studio-reports-member-row {
+  min-height: 66px;
+  cursor: default;
+}
+
+.studio-reports-sort-wrap {
+  min-width: 112px;
+}
+
+.studio-preview-phone .reports-sort-button {
+  min-width: 112px;
+}
+
+.studio-preview-phone .reports-member-payment {
+  max-width: 68px;
+}
+
+.studio-preview-phone .reports-status-badge {
+  background: var(--ks-color-reported-bg, #fff7ed);
+  color: var(--ks-color-reported-text, #9a3412);
+}
+
+.studio-preview-phone .reports-helper-card,
+.studio-preview-phone .reports-bulk-confirm-button {
+  border-radius: var(--ks-radius-card-compact, 14px);
+}
+
+.studio-preview-phone .reports-bulk-confirm-button {
+  background: var(--ks-color-primary, #2563eb);
+  min-height: var(--ks-size-button-large-min-height, 54px);
 }
 
 .studio-url-list {

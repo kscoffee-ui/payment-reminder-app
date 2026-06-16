@@ -1,15 +1,23 @@
 import React, { useRef, useState } from 'react'
 import {
+  ArrowLeft,
   Bell,
   Calendar,
+  Check,
   CheckCircle2,
   ChevronRight,
   Clock3,
   FileText,
+  Info,
   JapaneseYen,
   LayoutDashboard,
-  Link2,
+  Megaphone,
+  MoreVertical,
+  Pencil,
+  Search,
   Settings,
+  Share2,
+  SlidersHorizontal,
   UserPlus,
   Users,
   Wallet,
@@ -45,6 +53,14 @@ function paymentLabel(method) {
   return PAYMENT_LABELS[method] || PAYMENT_LABELS.cash
 }
 
+function formatUpdatedAt(member) {
+  return `${member.updatedAtText || '6/15 23:34'} 更新`
+}
+
+function formatReportedAt(member) {
+  return `${member.updatedAtText || '6/15 23:34'} 報告`
+}
+
 function getStatusCounts(members) {
   return members.reduce((counts, member) => {
     const status = member.status || 'unpaid'
@@ -52,16 +68,23 @@ function getStatusCounts(members) {
   }, { unpaid: 0, reported: 0, confirmed: 0 })
 }
 
-function PreviewHeader({ counts }) {
+function PreviewHeader({ counts, onReportsOpen, showReportsButton }) {
   return (
     <header className="app-header studio-preview-app-header">
       <img src={kaishuruLogo} alt="カイシュル" className="app-logo" />
-      <div className="app-header__action">
-        <button type="button" className="reports-bell-button" aria-label={`確認待ち ${counts.reported}件`}>
-          <Bell size={25} strokeWidth={2.3} aria-hidden="true" />
-          {counts.reported > 0 && <span className="reports-bell-badge">{counts.reported}</span>}
-        </button>
-      </div>
+      {showReportsButton && (
+        <div className="app-header__action">
+          <button
+            type="button"
+            className="reports-bell-button"
+            aria-label={`確認待ち ${counts.reported}件`}
+            onClick={onReportsOpen}
+          >
+            <Bell size={25} strokeWidth={2.3} aria-hidden="true" />
+            {counts.reported > 0 && <span className="reports-bell-badge">{counts.reported}</span>}
+          </button>
+        </div>
+      )}
     </header>
   )
 }
@@ -164,8 +187,21 @@ function DashboardPreview({ event, members, counts, confirmedRate }) {
 
 function MembersPreview({ event, members }) {
   return (
-    <section className="studio-preview-pane studio-preview-members">
+    <section className="participants-screen studio-preview-members">
       <h1 className="participants-title">参加者一覧</h1>
+
+      <label className="member-search">
+        <Search size={19} strokeWidth={2.4} aria-hidden="true" />
+        <input type="search" placeholder="名前で検索" readOnly />
+      </label>
+
+      <div className="status-pill-row member-filter-row" role="tablist" aria-label="参加者ステータスフィルター">
+        <button type="button" className="status-pill pill-all pill-active">すべて</button>
+        <button type="button" className="status-pill pill-unpaid">未払い</button>
+        <button type="button" className="status-pill pill-reported">確認待ち</button>
+        <button type="button" className="status-pill pill-confirmed">確認済み</button>
+      </div>
+
       <ul className="member-list studio-member-list">
         {members.map((member) => (
           <li className={`member-list-item member-list-item--${member.status}`} key={member.id}>
@@ -173,18 +209,12 @@ function MembersPreview({ event, members }) {
               <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
               <span className="member-row-main">
                 <span className="member-row-name">{member.name || '名前未設定'}</span>
-                <span className="member-row-updated">
-                  {formatMoney(event.amountPerPerson)} / {paymentLabel(member.paymentMethod || event.paymentMethod)}
-                </span>
+                <span className="member-row-updated">{formatUpdatedAt(member)}</span>
               </span>
-              <span className="studio-member-actions">
+              <span className="member-row-status-actions">
                 <StatusBadge status={member.status} className="member-status-badge" />
-                {member.status === 'reported' && (
-                  <KaishuruButton variant="primary" className="studio-member-confirm-button">
-                    確認する
-                  </KaishuruButton>
-                )}
               </span>
+              <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
             </div>
           </li>
         ))}
@@ -194,14 +224,11 @@ function MembersPreview({ event, members }) {
 }
 
 function SettingsPreview({ event }) {
-  const adminUrl = event.adminUrl || '/admin/demo-event?token=admin-demo'
-  const joinUrl = event.joinUrl || '/join/demo-event?token=join-demo'
-
   return (
-    <section className="studio-preview-pane studio-preview-settings">
+    <section className="admin-settings-screen studio-preview-settings">
       <h1 className="settings-page-title">設定 / イベント情報</h1>
 
-      <KaishuruCard as="div" className="settings-card settings-summary-card studio-settings-card">
+      <div className="settings-card settings-summary-card studio-settings-card">
         <div className="settings-summary-grid">
           <article className="settings-summary-item">
             <p className="settings-summary-label">
@@ -232,38 +259,127 @@ function SettingsPreview({ event }) {
             <b>{paymentLabel(event.paymentMethod)}</b>
           </article>
         </div>
-      </KaishuruCard>
+      </div>
 
-      <KaishuruCard as="div" className="settings-card settings-guide-card studio-settings-card">
+      <div className="settings-card settings-guide-card studio-settings-card">
         <h3>
-          <span className="settings-guide-icon" aria-hidden="true"><Wallet size={20} strokeWidth={2} /></span>
-          支払い方法の案内
+          <span className="settings-guide-icon" aria-hidden="true"><Megaphone size={20} strokeWidth={2} /></span>
+          幹事からの案内
         </h3>
         <p>{event.paymentInfo}</p>
         {event.memo && <p className="sub">{event.memo}</p>}
-      </KaishuruCard>
+      </div>
 
-      <KaishuruCard as="div" className="settings-card participant-share-card studio-settings-card">
+      <button type="button" className="btn btn-outline-primary btn-lg settings-edit-trigger">
+        <Pencil size={20} strokeWidth={2} aria-hidden="true" />
+        イベント情報を編集
+      </button>
+
+      <div className="settings-card participant-share-card studio-settings-card">
         <h3>
           <span className="participant-share-icon" aria-hidden="true"><UserPlus size={20} strokeWidth={2} /></span>
-          URL共有
+          参加者を追加する
         </h3>
-        <p className="sub">幹事用URLと参加者用URLの見た目確認用モックです。</p>
-        <div className="studio-url-list">
-          <p className="studio-url-row">
-            <span><Link2 size={15} aria-hidden="true" />幹事用URL</span>
-            <code>{adminUrl}</code>
-          </p>
-          <p className="studio-url-row">
-            <span><Link2 size={15} aria-hidden="true" />参加者用URL</span>
-            <code>{joinUrl}</code>
-          </p>
-        </div>
+        <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
         <div className="share-actions studio-share-actions">
-          <KaishuruButton variant="secondary" className="studio-share-button">幹事用URLを共有</KaishuruButton>
-          <KaishuruButton variant="primary" className="studio-share-button">参加者用URLを共有</KaishuruButton>
+          <KaishuruButton variant="line" className="studio-share-button">LINEで共有</KaishuruButton>
+          <KaishuruButton variant="secondary" className="studio-share-button">
+            <Share2 size={18} strokeWidth={2.2} aria-hidden="true" />
+            その他のアプリで共有
+          </KaishuruButton>
         </div>
-      </KaishuruCard>
+      </div>
+    </section>
+  )
+}
+
+function ReportsInboxPreview({ event, members, onBack }) {
+  return (
+    <section className="reports-inbox-screen studio-reports-screen">
+      <div className="reports-ios-header">
+        <button
+          type="button"
+          className="reports-ios-back-button"
+          aria-label="ダッシュボードへ戻る"
+          onClick={onBack}
+        >
+          <ArrowLeft size={19} strokeWidth={2.5} aria-hidden="true" />
+          <span>戻る</span>
+        </button>
+
+        <div className="reports-ios-title-row">
+          <h1>確認待ち一覧</h1>
+          <span className="reports-count-chip">{members.length}人</span>
+        </div>
+        <p className="reports-ios-lead">支払い報告が届いています。内容を確認して「確認済み」にしてください。</p>
+      </div>
+
+      <div className="reports-filter-row">
+        <label className="reports-search-field">
+          <Search size={18} strokeWidth={2.4} aria-hidden="true" />
+          <input type="search" placeholder="名前で検索" readOnly />
+        </label>
+        <div className="reports-sort-wrap studio-reports-sort-wrap">
+          <button type="button" className="reports-sort-button">
+            <SlidersHorizontal size={17} strokeWidth={2.4} aria-hidden="true" />
+            <span>並び替え</span>
+          </button>
+        </div>
+      </div>
+
+      {members.length > 0 ? (
+        <ul className="member-list reports-inbox-list studio-reports-list">
+          {members.map((member) => (
+            <li key={member.id} className="member-list-item member-list-item--reported reports-inbox-item">
+              <details className="reports-inbox-button">
+                <summary className="member-list-row reports-member-row studio-reports-member-row">
+                  <span className="reports-member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+                  <span className="reports-member-main">
+                    <span className="reports-member-name">{member.name || '名前未設定'}</span>
+                    <span className="reports-member-meta">{formatReportedAt(member)}</span>
+                  </span>
+                  <span className="reports-member-payment">
+                    <span>{paymentLabel(member.paymentMethod || event.paymentMethod)}</span>
+                    <span>{member.proofMemo ? 'メモあり' : 'メモなし'}</span>
+                  </span>
+                  <StatusBadge status="reported" className="reports-status-badge" />
+                  <span className="reports-action-wrap">
+                    <button type="button" className="reports-action-trigger" aria-label={`${member.name || '名前未設定'}の確認メニュー`}>
+                      <MoreVertical size={17} strokeWidth={2.4} aria-hidden="true" />
+                    </button>
+                  </span>
+                </summary>
+                <div className="member-row-detail reports-member-detail">
+                  <div className="member-detail-grid">
+                    <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+                    <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod || event.paymentMethod)}</b></p>
+                    <p><span>状態</span><b>確認待ち</b></p>
+                    <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
+                  </div>
+                </div>
+              </details>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <KaishuruCard as="div" className="reports-empty-card">
+          <CheckCircle2 size={24} strokeWidth={2.2} aria-hidden="true" />
+          <p>確認待ちの報告はありません。</p>
+        </KaishuruCard>
+      )}
+
+      <div className="reports-helper-card">
+        <div className="reports-helper-title">
+          <Info size={17} strokeWidth={2.4} aria-hidden="true" />
+          <span>確認のポイント</span>
+        </div>
+        <p>支払い方法・金額・メモを確認して、内容に問題がなければ「確認済み」にしてください。</p>
+      </div>
+
+      <button type="button" className="btn btn-lg reports-bulk-confirm-button" disabled={members.length === 0}>
+        <Check size={20} strokeWidth={2.5} aria-hidden="true" />
+        すべて確認済みにする
+      </button>
     </section>
   )
 }
@@ -273,34 +389,63 @@ export default function StudioPreview({
   members = studioSampleMembers,
 } = {}) {
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeSubscreen, setActiveSubscreen] = useState(null)
   const scrollRef = useRef(null)
   const counts = getStatusCounts(members)
   const total = members.length
   const confirmedRate = total ? Math.round((counts.confirmed / total) * 100) : 0
+  const reportedMembers = members.filter((member) => member.status === 'reported')
 
-  function switchPreviewTab(tabId) {
-    setActiveTab(tabId)
+  function resetPreviewScroll() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0
     }
+  }
+
+  function switchPreviewTab(tabId) {
+    setActiveTab(tabId)
+    setActiveSubscreen(null)
+    resetPreviewScroll()
+  }
+
+  function openReportsInbox() {
+    setActiveTab('dashboard')
+    setActiveSubscreen('reports')
+    resetPreviewScroll()
+  }
+
+  function backToDashboard() {
+    setActiveTab('dashboard')
+    setActiveSubscreen(null)
+    resetPreviewScroll()
   }
 
   // Firestore ではなく sampleData の状態だけで、本体adminに近いプレビューを描く
   return (
     <section className="studio-preview-phone" aria-label="スマホプレビュー">
       <div className="studio-preview-scroll" ref={scrollRef}>
-        <PreviewHeader counts={counts} />
-        {activeTab === 'dashboard' && (
-          <DashboardPreview event={event} members={members} counts={counts} confirmedRate={confirmedRate} />
+        <PreviewHeader
+          counts={counts}
+          onReportsOpen={openReportsInbox}
+          showReportsButton={activeTab === 'dashboard' && activeSubscreen !== 'reports'}
+        />
+        {activeSubscreen === 'reports' ? (
+          <ReportsInboxPreview event={event} members={reportedMembers} onBack={backToDashboard} />
+        ) : (
+          <>
+            {activeTab === 'dashboard' && (
+              <DashboardPreview event={event} members={members} counts={counts} confirmedRate={confirmedRate} />
+            )}
+            {activeTab === 'members' && <MembersPreview event={event} members={members} />}
+            {activeTab === 'settings' && <SettingsPreview event={event} />}
+          </>
         )}
-        {activeTab === 'members' && <MembersPreview event={event} members={members} />}
-        {activeTab === 'settings' && <SettingsPreview event={event} />}
       </div>
 
       <nav className="studio-preview-bottom-tabs" role="tablist" aria-label="スマホプレビュー画面切り替え">
         {PREVIEW_TABS.map((tab) => {
           const Icon = tab.icon
-          const isActive = activeTab === tab.id
+          const isActive = activeSubscreen === 'reports' ? tab.id === 'dashboard' : activeTab === tab.id
 
           return (
             <button
