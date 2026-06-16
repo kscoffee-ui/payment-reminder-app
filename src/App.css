@@ -2080,20 +2080,171 @@ textarea {
 
 .studio-preview-phone {
   width: min(390px, 100%);
+  height: clamp(640px, calc(100dvh - 120px), 760px);
   border: 1px solid var(--ks-color-border, #e2e8f0);
   border-radius: 24px;
   background: var(--ks-color-white, #fff);
   box-shadow: var(--ks-shadow-card, 0 10px 30px rgb(15 23 42 / 7%));
   display: grid;
-  gap: 14px;
-  padding: 18px 14px 26px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
   font-size: 16px;
   line-height: 1.5;
+}
+
+.studio-preview-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px 14px 22px;
 }
 
 .studio-preview-app-header {
   min-height: 58px;
   padding-top: 0;
+}
+
+.studio-preview-pane {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.studio-preview-bottom-tabs {
+  border-top: 1px solid var(--ks-color-border, #e2e8f0);
+  background: var(--ks-color-surface, #fff);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 8px 8px 10px;
+  box-shadow: 0 -6px 18px rgb(15 23 42 / 5%);
+}
+
+.studio-preview-tab {
+  border: 0;
+  border-radius: var(--ks-radius-control, 12px);
+  background: transparent;
+  color: var(--ks-color-text-muted, #64748b);
+  cursor: pointer;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-height: 52px;
+  padding: 6px 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.studio-preview-tab--active {
+  background: var(--ks-color-primary-bg, #eff6ff);
+  color: var(--ks-color-primary, #2563eb);
+}
+
+.studio-preview-phone .member-list {
+  border-color: var(--ks-color-border, #e2e8f0);
+  background: var(--ks-color-surface, #fff);
+  box-shadow: var(--ks-shadow-subtle, 0 4px 12px rgb(15 23 42 / 4%));
+}
+
+.studio-member-row {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  cursor: default;
+}
+
+.studio-member-actions {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.studio-member-confirm-button {
+  min-height: 32px;
+  min-width: 86px;
+  border-radius: var(--ks-radius-pill, 999px);
+  padding: 5px 10px;
+  font-size: 0.74rem;
+}
+
+.studio-preview-phone .member-list-item--unpaid .member-avatar {
+  background: var(--ks-color-unpaid-bg, #fef2f2);
+  color: var(--ks-color-unpaid-text, #b91c1c);
+}
+
+.studio-preview-phone .member-list-item--reported .member-avatar {
+  background: var(--ks-color-reported-bg, #fff7ed);
+  color: var(--ks-color-reported-text, #9a3412);
+}
+
+.studio-preview-phone .member-list-item--confirmed .member-avatar {
+  background: var(--ks-color-confirmed-bg, #f0fdf4);
+  color: var(--ks-color-confirmed-text, #166534);
+}
+
+.studio-preview-settings .settings-card {
+  background: var(--ks-color-surface, #fff);
+  border-color: var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-card-compact, 14px);
+  box-shadow: var(--ks-shadow-subtle, 0 4px 12px rgb(15 23 42 / 4%));
+}
+
+.studio-preview-settings .settings-summary-item {
+  background: var(--ks-color-background, #f8fafc);
+  border-color: var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-control, 12px);
+}
+
+.studio-preview-settings .settings-summary-label,
+.studio-preview-settings .settings-summary-icon {
+  color: var(--ks-color-primary, #2563eb);
+}
+
+.studio-url-list {
+  display: grid;
+  gap: 7px;
+}
+
+.studio-url-row {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--ks-color-border, #e2e8f0);
+  border-radius: var(--ks-radius-control, 12px);
+  background: var(--ks-color-background, #f8fafc);
+  padding: 8px 10px;
+}
+
+.studio-url-row span {
+  color: var(--ks-color-text, #0f172a);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.studio-url-row code {
+  min-width: 0;
+  color: var(--ks-color-text-muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studio-share-actions {
+  grid-template-columns: 1fr;
+}
+
+.studio-share-button {
+  min-height: 42px;
+  font-size: 0.84rem;
 }
 
 @media (max-width: 760px) {
