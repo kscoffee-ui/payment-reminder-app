@@ -578,24 +578,9 @@ function AdminPage({ eventId, token }) {
             <span className="member-row-updated">{formatUpdatedAt(member.updatedAt)}</span>
           </span>
           <span className="member-row-status-actions">
-            {member.status === 'reported' && memberStatusFilter === 'reported' ? (
-              <button
-                type="button"
-                className="member-inline-confirm-button"
-                disabled={workingId === member.id}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  confirm(member.id)
-                }}
-              >
-                確認済みにする
-              </button>
-            ) : (
-              <span className={`status-badge member-status-badge badge-${member.status}`}>
-                {statusLabel(member.status)}
-              </span>
-            )}
+            <span className={`status-badge member-status-badge badge-${member.status}`}>
+              {statusLabel(member.status)}
+            </span>
           </span>
           <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
         </summary>
@@ -607,9 +592,6 @@ function AdminPage({ eventId, token }) {
             <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
           </div>
           <div className="member-row-actions">
-            {member.status === 'reported' && memberStatusFilter === 'reported' && (
-              <button className="btn btn-confirm member-action-btn" disabled={workingId === member.id} onClick={() => confirm(member.id)}>確認済みにする</button>
-            )}
             <button className="btn btn-ghost-danger member-action-btn" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
           </div>
         </div>
