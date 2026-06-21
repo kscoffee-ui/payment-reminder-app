@@ -350,6 +350,7 @@ function AdminPage({ eventId, token }) {
   const [activeAdminTab, setActiveAdminTab] = useState('dashboard')
   const [activeReportMemberId, setActiveReportMemberId] = useState('')
   const [openReportActionMemberId, setOpenReportActionMemberId] = useState('')
+  const [openMemberActionMemberId, setOpenMemberActionMemberId] = useState('')
   const [returnToUnpaidMember, setReturnToUnpaidMember] = useState(null)
   const [reportsSearchQuery, setReportsSearchQuery] = useState('')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
@@ -491,11 +492,11 @@ function AdminPage({ eventId, token }) {
   }
   if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
-  const confirm = async (memberId) => {
+  const confirm = async (memberId, options = {}) => {
     if (workingId === memberId) return false
     setWorkingId(memberId)
     try {
-      await confirmPayment({ eventId, memberId })
+      await confirmPayment({ eventId, memberId, ...options })
       const updatedAt = new Date().toISOString()
       setMembers((currentMembers) => currentMembers.map((member) => (
         member.id === memberId ? { ...member, status: 'confirmed', updatedAt } : member
@@ -514,6 +515,18 @@ function AdminPage({ eventId, token }) {
     if (confirmed) {
       setOpenReportActionMemberId('')
     }
+  }
+
+  const manuallyConfirmMember = async (member) => {
+    if (workingId === member.id || member.status !== 'unpaid') return
+    setOpenMemberActionMemberId('')
+    if (!window.confirm('この参加者を手動で確認済みにしますか？\n本人の支払い報告を経由せず、幹事が支払い済みとして扱います。')) return
+    await confirm(member.id, { allowUnreported: true })
+  }
+
+  const confirmMemberFromMenu = async (memberId) => {
+    setOpenMemberActionMemberId('')
+    await confirm(memberId)
   }
 
   const requestReturnToUnpaid = (member) => {
@@ -543,6 +556,24 @@ function AdminPage({ eventId, token }) {
     }
   }
 
+  const returnConfirmedMemberToUnpaid = async (member) => {
+    if (workingId === member.id || member.status !== 'confirmed') return
+    setOpenMemberActionMemberId('')
+    if (!window.confirm('この参加者を未払いに戻しますか？\n確認済みの状態を取り消して、未払いとして扱います。')) return
+    setWorkingId(member.id)
+    try {
+      await returnReportToUnpaid({ eventId, memberId: member.id, allowConfirmed: true })
+      const updatedAt = new Date().toISOString()
+      setMembers((currentMembers) => currentMembers.map((currentMember) => (
+        currentMember.id === member.id ? { ...currentMember, status: 'unpaid', proofMemo: '', updatedAt } : currentMember
+      )))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setWorkingId('')
+    }
+  }
+
   const remove = async (memberId) => {
     if (!window.confirm('参加者を削除しますか？')) return
     setWorkingId(memberId)
@@ -554,6 +585,11 @@ function AdminPage({ eventId, token }) {
     } finally {
       setWorkingId('')
     }
+  }
+
+  const removeMemberFromMenu = async (memberId) => {
+    setOpenMemberActionMemberId('')
+    await remove(memberId)
   }
 
   const startSettingsEdit = () => {
@@ -609,6 +645,7 @@ function AdminPage({ eventId, token }) {
   }
 
   function switchAdminTab(nextTab) {
+    setOpenMemberActionMemberId('')
     const currentIndex = getMainAdminTabIndex(activeAdminTab)
     const nextIndex = getMainAdminTabIndex(nextTab)
 
@@ -622,6 +659,7 @@ function AdminPage({ eventId, token }) {
 
   function changeMemberStatusFilter(nextFilter) {
     if (nextFilter === memberStatusFilter) return
+    setOpenMemberActionMemberId('')
     if (!shouldReduceMotion) {
       const shouldAnimateContent = memberStatusFilter === 'all' && nextFilter !== 'all'
       if (memberStatusFilter === 'all' && nextFilter !== 'all') {
@@ -727,47 +765,133 @@ function AdminPage({ eventId, token }) {
     </nav>
   )
 
-  const memberCard = (member) => (
-    <motion.li
-      key={member.id}
-      layoutId={`member-filter-${member.id}`}
-      className={`member-list-item member-list-item--${member.status}`}
-      {...memberListItemMotionProps}
-    >
-      <motion.div
-        key={`${member.id}:content:${memberFilterAnimationKey}`}
-        className="member-list-motion-content"
-        {...memberListContentMotionProps}
+  const memberCard = (member) => {
+    const isMemberActionOpen = openMemberActionMemberId === member.id
+
+    return (
+      <motion.li
+        key={member.id}
+        layoutId={`member-filter-${member.id}`}
+        className={`member-list-item member-list-item--${member.status} ${isMemberActionOpen ? 'member-list-item--menu-open' : ''}`}
+        {...memberListItemMotionProps}
       >
-        <details className="member-list-details">
-          <summary className="member-list-row">
-            <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
-            <span className="member-row-main">
-              <span className="member-row-name">{member.name || '名前未設定'}</span>
-              <span className="member-row-updated">{formatUpdatedAt(member.updatedAt)}</span>
-            </span>
-            <span className="member-row-status-actions">
-              <span className={`status-badge member-status-badge badge-${member.status}`}>
-                {statusLabel(member.status)}
+        <motion.div
+          key={`${member.id}:content:${memberFilterAnimationKey}`}
+          className="member-list-motion-content"
+          {...memberListContentMotionProps}
+        >
+          <details className="member-list-details">
+            <summary className="member-list-row">
+              <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+              <span className="member-row-main">
+                <span className="member-row-name">{member.name || '名前未設定'}</span>
+                <span className="member-row-updated">{formatUpdatedAt(member.updatedAt)}</span>
               </span>
-            </span>
-            <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
-          </summary>
-          <div className="member-row-detail">
-            <div className="member-detail-grid">
-              <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
-              <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod)}</b></p>
-              <p><span>状態</span><b>{statusLabel(member.status)}</b></p>
-              <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
+              <span className="member-row-status-actions">
+                <span className={`status-badge member-status-badge badge-${member.status}`}>
+                  {statusLabel(member.status)}
+                </span>
+              </span>
+              <span className="reports-action-wrap member-action-wrap">
+                <button
+                  type="button"
+                  className="reports-action-trigger"
+                  aria-label={`${member.name || '名前未設定'}の操作`}
+                  aria-haspopup="menu"
+                  aria-expanded={isMemberActionOpen}
+                  disabled={workingId === member.id}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    setOpenMemberActionMemberId((current) => (current === member.id ? '' : member.id))
+                  }}
+                >
+                  <MoreVertical size={17} strokeWidth={2.4} aria-hidden="true" />
+                </button>
+                {isMemberActionOpen && (
+                  <div
+                    className="reports-action-menu member-action-menu"
+                    role="menu"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                    }}
+                  >
+                    {member.status === 'unpaid' && (
+                      <button
+                        type="button"
+                        className="reports-action-menu__item"
+                        role="menuitem"
+                        disabled={workingId === member.id}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          manuallyConfirmMember(member)
+                        }}
+                      >
+                        手動で確認済みにする
+                      </button>
+                    )}
+                    {member.status === 'reported' && (
+                      <button
+                        type="button"
+                        className="reports-action-menu__item"
+                        role="menuitem"
+                        disabled={workingId === member.id}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          confirmMemberFromMenu(member.id)
+                        }}
+                      >
+                        確認済みにする
+                      </button>
+                    )}
+                    {member.status === 'confirmed' && (
+                      <button
+                        type="button"
+                        className="reports-action-menu__item"
+                        role="menuitem"
+                        disabled={workingId === member.id}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          returnConfirmedMemberToUnpaid(member)
+                        }}
+                      >
+                        未払いに戻す
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="reports-action-menu__item reports-action-menu__item--danger"
+                      role="menuitem"
+                      disabled={workingId === member.id}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        removeMemberFromMenu(member.id)
+                      }}
+                    >
+                      削除する
+                    </button>
+                  </div>
+                )}
+              </span>
+            </summary>
+            <div className="member-row-detail">
+              <div className="member-detail-grid">
+                <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+                <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod)}</b></p>
+                <p><span>状態</span><b>{statusLabel(member.status)}</b></p>
+                <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
+              </div>
             </div>
-            <div className="member-row-actions">
-              <button className="btn btn-ghost-danger member-action-btn" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
-            </div>
-          </div>
-        </details>
-      </motion.div>
-    </motion.li>
-  )
+          </details>
+        </motion.div>
+      </motion.li>
+    )
+  }
 
   return (
     <main className="container admin-shell">
@@ -1119,6 +1243,9 @@ function AdminPage({ eventId, token }) {
             <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => changeMemberStatusFilter('confirmed')}>確認済み</button>
           </div>
 
+          {openMemberActionMemberId && (
+            <button type="button" className="report-action-backdrop" aria-label="参加者操作メニューを閉じる" onClick={() => setOpenMemberActionMemberId('')} />
+          )}
           <ul className="member-list">
             <AnimatePresence initial={false} mode={shouldAnimateMemberFilter ? 'popLayout' : 'sync'}>
               {filteredMembers.map(memberCard)}

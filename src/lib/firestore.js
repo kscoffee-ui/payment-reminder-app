@@ -264,9 +264,10 @@ export async function reportPayment({ eventId, memberId, proofMemo }) {
   )
 }
 
-export async function confirmPayment({ eventId, memberId }) {
+export async function confirmPayment({ eventId, memberId, allowUnreported = false }) {
   const member = await request(docUrl(`events/${eventId}/members/${memberId}`)).then(fromDoc)
-  if (member.status !== 'reported') throw new Error('報告済みの参加者のみ確認できます。')
+  const canConfirm = member.status === 'reported' || (allowUnreported && member.status === 'unpaid')
+  if (!canConfirm) throw new Error(allowUnreported ? '未払いまたは報告済みの参加者のみ確認できます。' : '報告済みの参加者のみ確認できます。')
 
   await request(
     `${docUrl(`events/${eventId}/members/${memberId}`)}&updateMask.fieldPaths=status&updateMask.fieldPaths=updatedAt`,
@@ -277,9 +278,10 @@ export async function confirmPayment({ eventId, memberId }) {
   )
 }
 
-export async function returnReportToUnpaid({ eventId, memberId }) {
+export async function returnReportToUnpaid({ eventId, memberId, allowConfirmed = false }) {
   const member = await request(docUrl(`events/${eventId}/members/${memberId}`)).then(fromDoc)
-  if (member.status !== 'reported') throw new Error('確認待ちの参加者のみ未払いに戻せます。')
+  const canReturn = member.status === 'reported' || (allowConfirmed && member.status === 'confirmed')
+  if (!canReturn) throw new Error(allowConfirmed ? '確認待ちまたは確認済みの参加者のみ未払いに戻せます。' : '確認待ちの参加者のみ未払いに戻せます。')
 
   await request(
     `${docUrl(`events/${eventId}/members/${memberId}`)}&updateMask.fieldPaths=status&updateMask.fieldPaths=proofMemo&updateMask.fieldPaths=updatedAt`,
