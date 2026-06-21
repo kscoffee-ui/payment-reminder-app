@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, Info, JapaneseYen, LayoutDashboard, Megaphone, MoreVertical, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
@@ -46,6 +46,8 @@ const DEFAULT_CASH_PAYMENT_INFO = '幹事に現金で直接渡してください
 const MAIN_ADMIN_TABS = ['dashboard', 'members', 'settings']
 const MAIN_TAB_MOTION_DISTANCE = 20
 const MAIN_TAB_MOTION_TRANSITION = { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+const DASHBOARD_COUNT_MOTION_TRANSITION = { duration: 0.4, ease: 'easeOut' }
+const DASHBOARD_RATE_MOTION_TRANSITION = { duration: 0.5, ease: 'easeOut' }
 const MAIN_TAB_MOTION_VARIANTS = {
   enter: (direction) => ({
     opacity: 0,
@@ -67,6 +69,42 @@ function getMainAdminTabIndex(tab) {
 
 function isMainAdminTab(tab) {
   return getMainAdminTabIndex(tab) !== -1
+}
+
+function toFiniteNumber(value) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : 0
+}
+
+function formatAnimatedInteger(value) {
+  return Math.max(0, Math.round(toFiniteNumber(value)))
+}
+
+function clampPercent(value) {
+  return Math.min(100, Math.max(0, toFiniteNumber(value)))
+}
+
+function useAnimatedNumber(target, transition, disabled) {
+  const numericTarget = toFiniteNumber(target)
+  const motionValue = useMotionValue(0)
+  const [displayValue, setDisplayValue] = useState(0)
+
+  useEffect(() => {
+    if (disabled) {
+      motionValue.set(numericTarget)
+      setDisplayValue(numericTarget)
+      return undefined
+    }
+
+    const controls = animate(motionValue, numericTarget, {
+      ...transition,
+      onUpdate: setDisplayValue,
+    })
+
+    return () => controls.stop()
+  }, [disabled, motionValue, numericTarget, transition])
+
+  return disabled ? numericTarget : displayValue
 }
 
 function paymentLabel(method) {
@@ -371,6 +409,16 @@ function AdminPage({ eventId, token }) {
       confirmedMembers,
     }
   }, [safeMembers])
+
+  const animatedUnpaid = useAnimatedNumber(counts.unpaid, DASHBOARD_COUNT_MOTION_TRANSITION, shouldReduceMotion)
+  const animatedReported = useAnimatedNumber(counts.reported, DASHBOARD_COUNT_MOTION_TRANSITION, shouldReduceMotion)
+  const animatedConfirmed = useAnimatedNumber(counts.confirmed, DASHBOARD_COUNT_MOTION_TRANSITION, shouldReduceMotion)
+  const animatedRate = useAnimatedNumber(counts.rate, DASHBOARD_RATE_MOTION_TRANSITION, shouldReduceMotion)
+  const dashboardUnpaid = formatAnimatedInteger(animatedUnpaid)
+  const dashboardReported = formatAnimatedInteger(animatedReported)
+  const dashboardConfirmed = formatAnimatedInteger(animatedConfirmed)
+  const dashboardRate = formatAnimatedInteger(animatedRate)
+  const dashboardProgressWidth = `${clampPercent(animatedRate).toFixed(2)}%`
 
   const filteredMembers = useMemo(() => {
     const query = memberSearchQuery.trim().toLowerCase()
@@ -687,7 +735,7 @@ function AdminPage({ eventId, token }) {
                 <article className="dashboard-unpaid-focus">
                   <span>未払い</span>
                   <b className="dashboard-unpaid-count">
-                    <span className="dashboard-unpaid-number">{counts.unpaid}</span>
+                    <span className="dashboard-unpaid-number">{dashboardUnpaid}</span>
                     <span className="dashboard-unpaid-unit">人</span>
                   </b>
                 </article>
@@ -696,16 +744,16 @@ function AdminPage({ eventId, token }) {
                     <p className="dashboard-summary-text">
                       <span className="dashboard-summary-number">{safeMembers.length}</span>
                       <span className="dashboard-summary-unit">人中</span>
-                      <span className="dashboard-summary-number">{counts.confirmed}</span>
+                      <span className="dashboard-summary-number">{dashboardConfirmed}</span>
                       <span className="dashboard-summary-unit">人確認済み</span>
                     </p>
                     <p className="dashboard-summary-rate">
-                      <span className="dashboard-summary-rate-value">{counts.rate}</span>
+                      <span className="dashboard-summary-rate-value">{dashboardRate}</span>
                       <span className="dashboard-summary-rate-unit">%</span>
                     </p>
                   </div>
-                  <div className="admin-progress-bar"><div className="admin-progress-fill" style={{ width: `${counts.rate}%` }} /></div>
-                  <p className="dashboard-summary-foot">{counts.confirmed} / {safeMembers.length}人</p>
+                  <div className="admin-progress-bar"><div className="admin-progress-fill" style={{ width: dashboardProgressWidth }} /></div>
+                  <p className="dashboard-summary-foot">{dashboardConfirmed} / {safeMembers.length}人</p>
                 </div>
               </div>
               <div className="dashboard-kpi-grid">
@@ -715,11 +763,11 @@ function AdminPage({ eventId, token }) {
                 </article>
                 <article className="dashboard-kpi dashboard-kpi-reported">
                   <span className="dashboard-kpi-label"><Clock3 size={15} />報告済み</span>
-                  <b>{counts.reported}</b>
+                  <b>{dashboardReported}</b>
                 </article>
                 <article className="dashboard-kpi dashboard-kpi-confirmed">
                   <span className="dashboard-kpi-label"><CheckCircle2 size={15} />確認済み</span>
-                  <b>{counts.confirmed}</b>
+                  <b>{dashboardConfirmed}</b>
                 </article>
               </div>
             </div>
