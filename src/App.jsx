@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, Info, JapaneseYen, LayoutDashboard, Megaphone, MoreVertical, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
@@ -59,6 +60,10 @@ const MEMBER_FILTER_CONTENT_TRANSITION = {
   y: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
 }
 const MEMBER_FILTER_MOTION_RESET_MS = 280
+const MEMBER_ACTION_MENU_WIDTH = 196
+const MEMBER_ACTION_MENU_HEIGHT = 112
+const MEMBER_ACTION_MENU_GAP = 8
+const MEMBER_ACTION_MENU_EDGE = 8
 const MAIN_TAB_MOTION_VARIANTS = {
   enter: (direction) => ({
     opacity: 0,
@@ -80,6 +85,31 @@ function getMainAdminTabIndex(tab) {
 
 function isMainAdminTab(tab) {
   return getMainAdminTabIndex(tab) !== -1
+}
+
+function getMemberActionMenuPosition(triggerElement) {
+  const triggerRect = triggerElement.getBoundingClientRect()
+  const viewportWidth = window.visualViewport?.width || window.innerWidth
+  const viewportHeight = window.visualViewport?.height || window.innerHeight
+  const bottomNavRect = document.querySelector('.admin-bottom-nav')?.getBoundingClientRect()
+  const bottomLimit = Math.min(viewportHeight, bottomNavRect?.top || viewportHeight) - MEMBER_ACTION_MENU_EDGE
+  const spaceBelow = bottomLimit - triggerRect.bottom - MEMBER_ACTION_MENU_GAP
+  const shouldOpenUp = spaceBelow < MEMBER_ACTION_MENU_HEIGHT
+  const rawTop = shouldOpenUp
+    ? triggerRect.top - MEMBER_ACTION_MENU_HEIGHT - MEMBER_ACTION_MENU_GAP
+    : triggerRect.bottom + MEMBER_ACTION_MENU_GAP
+  const maxLeft = Math.max(MEMBER_ACTION_MENU_EDGE, viewportWidth - MEMBER_ACTION_MENU_WIDTH - MEMBER_ACTION_MENU_EDGE)
+  const top = Math.max(MEMBER_ACTION_MENU_EDGE, Math.min(rawTop, bottomLimit - MEMBER_ACTION_MENU_HEIGHT))
+  const left = Math.max(
+    MEMBER_ACTION_MENU_EDGE,
+    Math.min(triggerRect.right - MEMBER_ACTION_MENU_WIDTH, maxLeft),
+  )
+
+  return {
+    left: `${Math.round(left)}px`,
+    top: `${Math.round(top)}px`,
+    placement: shouldOpenUp ? 'up' : 'down',
+  }
 }
 
 function toFiniteNumber(value) {
@@ -351,6 +381,7 @@ function AdminPage({ eventId, token }) {
   const [activeReportMemberId, setActiveReportMemberId] = useState('')
   const [openReportActionMemberId, setOpenReportActionMemberId] = useState('')
   const [openMemberActionMemberId, setOpenMemberActionMemberId] = useState('')
+  const [memberActionMenuPosition, setMemberActionMenuPosition] = useState(null)
   const [returnToUnpaidMember, setReturnToUnpaidMember] = useState(null)
   const [reportsSearchQuery, setReportsSearchQuery] = useState('')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
@@ -372,6 +403,7 @@ function AdminPage({ eventId, token }) {
   const [memberFilterContentMotionEnabled, setMemberFilterContentMotionEnabled] = useState(false)
   const [memberFilterAnimationKey, setMemberFilterAnimationKey] = useState(0)
   const shouldReduceMotion = useReducedMotion()
+  const memberActionTriggerRefs = useRef(new Map())
 
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
@@ -455,6 +487,32 @@ function AdminPage({ eventId, token }) {
     return () => window.clearTimeout(timeoutId)
   }, [memberFilterMotionEnabled, memberStatusFilter])
 
+  useEffect(() => {
+    if (!openMemberActionMemberId) return undefined
+
+    const updateMenuPosition = () => {
+      const triggerElement = memberActionTriggerRefs.current.get(openMemberActionMemberId)
+      if (!triggerElement) {
+        setMemberActionMenuPosition(null)
+        return
+      }
+      setMemberActionMenuPosition(getMemberActionMenuPosition(triggerElement))
+    }
+
+    updateMenuPosition()
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+    window.visualViewport?.addEventListener('resize', updateMenuPosition)
+    window.visualViewport?.addEventListener('scroll', updateMenuPosition)
+
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+      window.visualViewport?.removeEventListener('resize', updateMenuPosition)
+      window.visualViewport?.removeEventListener('scroll', updateMenuPosition)
+    }
+  }, [openMemberActionMemberId])
+
   const activeReportMember = useMemo(
     () => safeMembers.find((member) => member.id === activeReportMemberId) || null,
     [activeReportMemberId, safeMembers],
@@ -492,6 +550,11 @@ function AdminPage({ eventId, token }) {
   }
   if (!event) return <main className="container"><AppHeader /><section className="card"><p className="error">イベントが見つかりません。</p></section></main>
 
+  const closeMemberActionMenu = () => {
+    setOpenMemberActionMemberId('')
+    setMemberActionMenuPosition(null)
+  }
+
   const confirm = async (memberId, options = {}) => {
     if (workingId === memberId) return false
     setWorkingId(memberId)
@@ -519,13 +582,13 @@ function AdminPage({ eventId, token }) {
 
   const manuallyConfirmMember = async (member) => {
     if (workingId === member.id || member.status !== 'unpaid') return
-    setOpenMemberActionMemberId('')
+    closeMemberActionMenu()
     if (!window.confirm('この参加者を手動で確認済みにしますか？\n本人の支払い報告を経由せず、幹事が支払い済みとして扱います。')) return
     await confirm(member.id, { allowUnreported: true })
   }
 
   const confirmMemberFromMenu = async (memberId) => {
-    setOpenMemberActionMemberId('')
+    closeMemberActionMenu()
     await confirm(memberId)
   }
 
@@ -558,7 +621,7 @@ function AdminPage({ eventId, token }) {
 
   const returnConfirmedMemberToUnpaid = async (member) => {
     if (workingId === member.id || member.status !== 'confirmed') return
-    setOpenMemberActionMemberId('')
+    closeMemberActionMenu()
     if (!window.confirm('この参加者を未払いに戻しますか？\n確認済みの状態を取り消して、未払いとして扱います。')) return
     setWorkingId(member.id)
     try {
@@ -588,7 +651,7 @@ function AdminPage({ eventId, token }) {
   }
 
   const removeMemberFromMenu = async (memberId) => {
-    setOpenMemberActionMemberId('')
+    closeMemberActionMenu()
     await remove(memberId)
   }
 
@@ -645,7 +708,7 @@ function AdminPage({ eventId, token }) {
   }
 
   function switchAdminTab(nextTab) {
-    setOpenMemberActionMemberId('')
+    closeMemberActionMenu()
     const currentIndex = getMainAdminTabIndex(activeAdminTab)
     const nextIndex = getMainAdminTabIndex(nextTab)
 
@@ -659,7 +722,7 @@ function AdminPage({ eventId, token }) {
 
   function changeMemberStatusFilter(nextFilter) {
     if (nextFilter === memberStatusFilter) return
-    setOpenMemberActionMemberId('')
+    closeMemberActionMenu()
     if (!shouldReduceMotion) {
       const shouldAnimateContent = memberStatusFilter === 'all' && nextFilter !== 'all'
       if (memberStatusFilter === 'all' && nextFilter !== 'all') {
@@ -796,6 +859,13 @@ function AdminPage({ eventId, token }) {
                 <button
                   type="button"
                   className="reports-action-trigger"
+                  ref={(element) => {
+                    if (element) {
+                      memberActionTriggerRefs.current.set(member.id, element)
+                    } else {
+                      memberActionTriggerRefs.current.delete(member.id)
+                    }
+                  }}
                   aria-label={`${member.name || '名前未設定'}の操作`}
                   aria-haspopup="menu"
                   aria-expanded={isMemberActionOpen}
@@ -803,79 +873,97 @@ function AdminPage({ eventId, token }) {
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
-                    setOpenMemberActionMemberId((current) => (current === member.id ? '' : member.id))
+                    if (isMemberActionOpen) {
+                      closeMemberActionMenu()
+                      return
+                    }
+                    setMemberActionMenuPosition(getMemberActionMenuPosition(event.currentTarget))
+                    setOpenMemberActionMemberId(member.id)
                   }}
                 >
                   <MoreVertical size={17} strokeWidth={2.4} aria-hidden="true" />
                 </button>
-                {isMemberActionOpen && (
-                  <div
-                    className="reports-action-menu member-action-menu"
-                    role="menu"
-                    onClick={(event) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                    }}
-                  >
-                    {member.status === 'unpaid' && (
-                      <button
-                        type="button"
-                        className="reports-action-menu__item"
-                        role="menuitem"
-                        disabled={workingId === member.id}
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          manuallyConfirmMember(member)
-                        }}
-                      >
-                        手動で確認済みにする
-                      </button>
-                    )}
-                    {member.status === 'reported' && (
-                      <button
-                        type="button"
-                        className="reports-action-menu__item"
-                        role="menuitem"
-                        disabled={workingId === member.id}
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          confirmMemberFromMenu(member.id)
-                        }}
-                      >
-                        確認済みにする
-                      </button>
-                    )}
-                    {member.status === 'confirmed' && (
-                      <button
-                        type="button"
-                        className="reports-action-menu__item"
-                        role="menuitem"
-                        disabled={workingId === member.id}
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          returnConfirmedMemberToUnpaid(member)
-                        }}
-                      >
-                        未払いに戻す
-                      </button>
-                    )}
+                {isMemberActionOpen && memberActionMenuPosition && typeof document !== 'undefined' && createPortal(
+                  <>
                     <button
                       type="button"
-                      className="reports-action-menu__item reports-action-menu__item--danger"
-                      role="menuitem"
-                      disabled={workingId === member.id}
+                      className="report-action-backdrop member-action-backdrop"
+                      aria-label="参加者操作メニューを閉じる"
+                      onClick={closeMemberActionMenu}
+                    />
+                    <div
+                      className={`reports-action-menu member-action-menu member-action-menu--${memberActionMenuPosition.placement}`}
+                      role="menu"
+                      style={{
+                        left: memberActionMenuPosition.left,
+                        top: memberActionMenuPosition.top,
+                      }}
                       onClick={(event) => {
                         event.preventDefault()
                         event.stopPropagation()
-                        removeMemberFromMenu(member.id)
                       }}
                     >
-                      削除する
-                    </button>
-                  </div>
+                      {member.status === 'unpaid' && (
+                        <button
+                          type="button"
+                          className="reports-action-menu__item"
+                          role="menuitem"
+                          disabled={workingId === member.id}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            manuallyConfirmMember(member)
+                          }}
+                        >
+                          手動で確認済みにする
+                        </button>
+                      )}
+                      {member.status === 'reported' && (
+                        <button
+                          type="button"
+                          className="reports-action-menu__item"
+                          role="menuitem"
+                          disabled={workingId === member.id}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            confirmMemberFromMenu(member.id)
+                          }}
+                        >
+                          確認済みにする
+                        </button>
+                      )}
+                      {member.status === 'confirmed' && (
+                        <button
+                          type="button"
+                          className="reports-action-menu__item"
+                          role="menuitem"
+                          disabled={workingId === member.id}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            returnConfirmedMemberToUnpaid(member)
+                          }}
+                        >
+                          未払いに戻す
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="reports-action-menu__item reports-action-menu__item--danger"
+                        role="menuitem"
+                        disabled={workingId === member.id}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          removeMemberFromMenu(member.id)
+                        }}
+                      >
+                        削除する
+                      </button>
+                    </div>
+                  </>,
+                  document.body,
                 )}
               </span>
             </summary>
@@ -1243,9 +1331,6 @@ function AdminPage({ eventId, token }) {
             <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => changeMemberStatusFilter('confirmed')}>確認済み</button>
           </div>
 
-          {openMemberActionMemberId && (
-            <button type="button" className="report-action-backdrop" aria-label="参加者操作メニューを閉じる" onClick={() => setOpenMemberActionMemberId('')} />
-          )}
           <ul className="member-list">
             <AnimatePresence initial={false} mode={shouldAnimateMemberFilter ? 'popLayout' : 'sync'}>
               {filteredMembers.map(memberCard)}
