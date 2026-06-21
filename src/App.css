@@ -653,6 +653,7 @@ textarea {
 .participants-screen .member-list { position:relative; width:100%; min-width:0; }
 .participants-screen .member-list-item,
 .participants-screen .member-empty { width:100%; min-width:0; }
+.participants-screen .member-list-motion-content { width:100%; min-width:0; }
 .member-list { list-style:none; margin:0; padding:0; border:1px solid #e5e7eb; border-radius:14px; background:#fff; overflow:hidden; box-shadow:0 6px 18px rgb(15 23 42 / 4%); }
 .member-list-item { border-bottom:1px solid #eef2f7; }
 .member-list-item:last-child { border-bottom:0; }

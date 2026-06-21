@@ -54,6 +54,10 @@ const MEMBER_FILTER_MOTION_TRANSITION = {
   layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
 }
 const MEMBER_FILTER_EXIT_TRANSITION = { duration: 0.14, ease: 'easeOut' }
+const MEMBER_FILTER_CONTENT_TRANSITION = {
+  opacity: { duration: 0.16, ease: 'easeOut' },
+  y: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
+}
 const MEMBER_FILTER_MOTION_RESET_MS = 280
 const MAIN_TAB_MOTION_VARIANTS = {
   enter: (direction) => ({
@@ -364,6 +368,7 @@ function AdminPage({ eventId, token }) {
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [mainTabMotionDirection, setMainTabMotionDirection] = useState(1)
   const [memberFilterMotionEnabled, setMemberFilterMotionEnabled] = useState(false)
+  const [memberFilterContentMotionEnabled, setMemberFilterContentMotionEnabled] = useState(false)
   const [memberFilterAnimationKey, setMemberFilterAnimationKey] = useState(0)
   const shouldReduceMotion = useReducedMotion()
 
@@ -443,6 +448,7 @@ function AdminPage({ eventId, token }) {
 
     const timeoutId = window.setTimeout(() => {
       setMemberFilterMotionEnabled(false)
+      setMemberFilterContentMotionEnabled(false)
     }, MEMBER_FILTER_MOTION_RESET_MS)
 
     return () => window.clearTimeout(timeoutId)
@@ -617,9 +623,11 @@ function AdminPage({ eventId, token }) {
   function changeMemberStatusFilter(nextFilter) {
     if (nextFilter === memberStatusFilter) return
     if (!shouldReduceMotion) {
+      const shouldAnimateContent = memberStatusFilter === 'all' && nextFilter !== 'all'
       if (memberStatusFilter === 'all' && nextFilter !== 'all') {
         setMemberFilterAnimationKey((current) => current + 1)
       }
+      setMemberFilterContentMotionEnabled(shouldAnimateContent)
       setMemberFilterMotionEnabled(true)
     }
     setMemberStatusFilter(nextFilter)
@@ -670,6 +678,7 @@ function AdminPage({ eventId, token }) {
     transition: shouldReduceMotion ? { duration: 0 } : MAIN_TAB_MOTION_TRANSITION,
   }
   const shouldAnimateMemberFilter = memberFilterMotionEnabled && !shouldReduceMotion
+  const shouldAnimateMemberFilterContent = memberFilterContentMotionEnabled && shouldAnimateMemberFilter
   const memberListItemMotionProps = shouldAnimateMemberFilter
     ? {
         layout: 'position',
@@ -677,6 +686,13 @@ function AdminPage({ eventId, token }) {
         animate: { opacity: 1, y: 0 },
         exit: { opacity: 0, transition: MEMBER_FILTER_EXIT_TRANSITION },
         transition: MEMBER_FILTER_MOTION_TRANSITION,
+      }
+    : {}
+  const memberListContentMotionProps = shouldAnimateMemberFilterContent
+    ? {
+        initial: { opacity: 0.35, y: 5 },
+        animate: { opacity: 1, y: 0 },
+        transition: MEMBER_FILTER_CONTENT_TRANSITION,
       }
     : {}
   const memberEmptyMotionProps = shouldAnimateMemberFilter
@@ -713,37 +729,43 @@ function AdminPage({ eventId, token }) {
 
   const memberCard = (member) => (
     <motion.li
-      key={`${member.id}:${memberFilterAnimationKey}`}
+      key={member.id}
       layoutId={`member-filter-${member.id}`}
       className={`member-list-item member-list-item--${member.status}`}
       {...memberListItemMotionProps}
     >
-      <details className="member-list-details">
-        <summary className="member-list-row">
-          <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
-          <span className="member-row-main">
-            <span className="member-row-name">{member.name || '名前未設定'}</span>
-            <span className="member-row-updated">{formatUpdatedAt(member.updatedAt)}</span>
-          </span>
-          <span className="member-row-status-actions">
-            <span className={`status-badge member-status-badge badge-${member.status}`}>
-              {statusLabel(member.status)}
+      <motion.div
+        key={`${member.id}:content:${memberFilterAnimationKey}`}
+        className="member-list-motion-content"
+        {...memberListContentMotionProps}
+      >
+        <details className="member-list-details">
+          <summary className="member-list-row">
+            <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
+            <span className="member-row-main">
+              <span className="member-row-name">{member.name || '名前未設定'}</span>
+              <span className="member-row-updated">{formatUpdatedAt(member.updatedAt)}</span>
             </span>
-          </span>
-          <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
-        </summary>
-        <div className="member-row-detail">
-          <div className="member-detail-grid">
-            <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
-            <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod)}</b></p>
-            <p><span>状態</span><b>{statusLabel(member.status)}</b></p>
-            <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
+            <span className="member-row-status-actions">
+              <span className={`status-badge member-status-badge badge-${member.status}`}>
+                {statusLabel(member.status)}
+              </span>
+            </span>
+            <ChevronRight size={17} className="member-row-chevron" aria-hidden="true" />
+          </summary>
+          <div className="member-row-detail">
+            <div className="member-detail-grid">
+              <p><span>金額</span><b>{formatMoney(event.amountPerPerson)}</b></p>
+              <p><span>支払い方法</span><b>{paymentLabel(member.paymentMethod)}</b></p>
+              <p><span>状態</span><b>{statusLabel(member.status)}</b></p>
+              <p><span>報告メモ</span><b>{member.proofMemo || 'なし'}</b></p>
+            </div>
+            <div className="member-row-actions">
+              <button className="btn btn-ghost-danger member-action-btn" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
+            </div>
           </div>
-          <div className="member-row-actions">
-            <button className="btn btn-ghost-danger member-action-btn" disabled={workingId === member.id} onClick={() => remove(member.id)}>削除</button>
-          </div>
-        </div>
-      </details>
+        </details>
+      </motion.div>
     </motion.li>
   )
 
