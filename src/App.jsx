@@ -364,6 +364,7 @@ function AdminPage({ eventId, token }) {
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [mainTabMotionDirection, setMainTabMotionDirection] = useState(1)
   const [memberFilterMotionEnabled, setMemberFilterMotionEnabled] = useState(false)
+  const [memberFilterAnimationKey, setMemberFilterAnimationKey] = useState(0)
   const shouldReduceMotion = useReducedMotion()
 
   const params = new URLSearchParams(window.location.search)
@@ -615,7 +616,12 @@ function AdminPage({ eventId, token }) {
 
   function changeMemberStatusFilter(nextFilter) {
     if (nextFilter === memberStatusFilter) return
-    setMemberFilterMotionEnabled(true)
+    if (!shouldReduceMotion) {
+      if (memberStatusFilter === 'all' && nextFilter !== 'all') {
+        setMemberFilterAnimationKey((current) => current + 1)
+      }
+      setMemberFilterMotionEnabled(true)
+    }
     setMemberStatusFilter(nextFilter)
   }
 
@@ -706,7 +712,12 @@ function AdminPage({ eventId, token }) {
   )
 
   const memberCard = (member) => (
-    <motion.li key={member.id} className={`member-list-item member-list-item--${member.status}`} {...memberListItemMotionProps}>
+    <motion.li
+      key={`${member.id}:${memberFilterAnimationKey}`}
+      layoutId={`member-filter-${member.id}`}
+      className={`member-list-item member-list-item--${member.status}`}
+      {...memberListItemMotionProps}
+    >
       <details className="member-list-details">
         <summary className="member-list-row">
           <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
