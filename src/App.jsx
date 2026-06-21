@@ -664,7 +664,7 @@ function AdminPage({ eventId, token }) {
         )}
       </AppHeader>
       <div className="admin-tab-content">
-        <AnimatePresence initial={false} custom={mainTabMotionDirection}>
+        <AnimatePresence initial={false} custom={mainTabMotionDirection} mode="popLayout">
       {activeAdminTab === 'dashboard' && (
         <motion.div key="dashboard" className="admin-tab-panel" {...mainTabMotionProps}>
           <section className="card admin-event-card">
@@ -975,126 +975,130 @@ function AdminPage({ eventId, token }) {
       )}
 
       {activeAdminTab === 'members' && (
-      <motion.section key="members" className="participants-screen" {...mainTabMotionProps}>
-        <h1 className="participants-title">参加者一覧</h1>
+      <motion.div key="members" className="admin-tab-panel" {...mainTabMotionProps}>
+        <section className="participants-screen">
+          <h1 className="participants-title">参加者一覧</h1>
 
-        <label className="member-search">
-          <Search size={19} strokeWidth={2.4} aria-hidden="true" />
-          <input
-            type="search"
-            placeholder="名前で検索"
-            value={memberSearchQuery}
-            onChange={(e) => setMemberSearchQuery(e.target.value)}
-          />
-        </label>
+          <label className="member-search">
+            <Search size={19} strokeWidth={2.4} aria-hidden="true" />
+            <input
+              type="search"
+              placeholder="名前で検索"
+              value={memberSearchQuery}
+              onChange={(e) => setMemberSearchQuery(e.target.value)}
+            />
+          </label>
 
-        <div className="status-pill-row member-filter-row" role="tablist" aria-label="参加者ステータスフィルター">
-          <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて</button>
-          <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い</button>
-          <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>確認待ち</button>
-          <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み</button>
-        </div>
+          <div className="status-pill-row member-filter-row" role="tablist" aria-label="参加者ステータスフィルター">
+            <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて</button>
+            <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い</button>
+            <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>確認待ち</button>
+            <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み</button>
+          </div>
 
-        <ul className="member-list">{filteredMembers.map(memberCard)}</ul>
-        {filteredMembers.length === 0 && (
-          <p className="member-empty">該当する参加者はいません。</p>
-        )}
-      </motion.section>
+          <ul className="member-list">{filteredMembers.map(memberCard)}</ul>
+          {filteredMembers.length === 0 && (
+            <p className="member-empty">該当する参加者はいません。</p>
+          )}
+        </section>
+      </motion.div>
       )}
 
       {activeAdminTab === 'settings' && (
-      <motion.section key="settings" className="admin-settings-screen" {...mainTabMotionProps}>
-        <h1 className="settings-page-title">設定 / イベント情報</h1>
-        {settingsSuccess && <p className="success">{settingsSuccess}</p>}
-        {!settingsEditing ? (
-          <>
-            <div className="settings-card settings-summary-card">
-              <div className="settings-summary-grid">
-                <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><FileText size={20} strokeWidth={2} /></span>イベント名</p><b>{event.title}</b>
-                </article>
-                <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><Calendar size={20} strokeWidth={2} /></span>日付</p><b>{formatDate(event.eventDate)}</b>
-                </article>
-                <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><JapaneseYen size={20} strokeWidth={2} /></span>会費</p><b>{formatMoney(event.amountPerPerson)}</b>
-                </article>
-                <article className="settings-summary-item">
-                  <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><Wallet size={20} strokeWidth={2} /></span>支払い</p><b>現金回収</b>
-                </article>
+      <motion.div key="settings" className="admin-tab-panel" {...mainTabMotionProps}>
+        <section className="admin-settings-screen">
+          <h1 className="settings-page-title">設定 / イベント情報</h1>
+          {settingsSuccess && <p className="success">{settingsSuccess}</p>}
+          {!settingsEditing ? (
+            <>
+              <div className="settings-card settings-summary-card">
+                <div className="settings-summary-grid">
+                  <article className="settings-summary-item">
+                    <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><FileText size={20} strokeWidth={2} /></span>イベント名</p><b>{event.title}</b>
+                  </article>
+                  <article className="settings-summary-item">
+                    <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><Calendar size={20} strokeWidth={2} /></span>日付</p><b>{formatDate(event.eventDate)}</b>
+                  </article>
+                  <article className="settings-summary-item">
+                    <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><JapaneseYen size={20} strokeWidth={2} /></span>会費</p><b>{formatMoney(event.amountPerPerson)}</b>
+                  </article>
+                  <article className="settings-summary-item">
+                    <p className="settings-summary-label"><span className="settings-summary-icon" aria-hidden="true"><Wallet size={20} strokeWidth={2} /></span>支払い</p><b>現金回収</b>
+                  </article>
+                </div>
               </div>
+              <div className="settings-card settings-guide-card">
+                <h3><span className="settings-guide-icon" aria-hidden="true"><Megaphone size={20} strokeWidth={2} /></span>幹事からの案内</h3>
+                <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
+                {hasVisibleMemo(event.memo) && <p className="sub">{event.memo.trim()}</p>}
+              </div>
+              <button className="btn btn-outline-primary btn-lg settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</button>
+            </>
+          ) : (
+            <form className="settings-edit-form settings-card" onSubmit={saveSettings}>
+              <label className="field">
+                <span>イベント名</span>
+                <input value={settingsForm.title} onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>日付</span>
+                <input type="date" value={settingsForm.eventDate} onChange={(e) => setSettingsForm({ ...settingsForm, eventDate: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>1人あたりの金額</span>
+                <input type="number" min="1" step="1" value={settingsForm.amountPerPerson} onChange={(e) => setSettingsForm({ ...settingsForm, amountPerPerson: e.target.value })} />
+              </label>
+              <div className="field fixed-field">
+                <span>支払い方法</span>
+                <p className="fixed-field-value">現金回収</p>
+              </div>
+              <label className="field">
+                <span>幹事からの案内</span>
+                <p className="sub">例：当日受付で集めます / 飲み会の開始前に幹事へ渡してください</p>
+                <textarea rows="3" placeholder="例：当日受付で集めます" value={settingsForm.paymentInfo} onChange={(e) => setSettingsForm({ ...settingsForm, paymentInfo: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>任意メモ</span>
+                <textarea rows="2" value={settingsForm.memo} onChange={(e) => setSettingsForm({ ...settingsForm, memo: e.target.value })} />
+              </label>
+              {settingsError && <p className="error">{settingsError}</p>}
+              <div className="settings-edit-actions">
+                <button className="btn btn-save btn-lg" disabled={settingsSaving}>{settingsSaving ? '保存中...' : '保存する'}</button>
+                <button type="button" className="btn btn-secondary btn-lg" onClick={cancelSettingsEdit} disabled={settingsSaving}>キャンセル</button>
+              </div>
+            </form>
+          )}
+          <div className="settings-card participant-share-card">
+            <h3><span className="participant-share-icon" aria-hidden="true"><UserPlus size={20} strokeWidth={2} /></span>参加者を追加する</h3>
+            <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
+            <div className="share-actions">
+              <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
+              {canUseNativeShare() && (
+                <button
+                  className="btn btn-secondary"
+                  disabled={!joinUrl}
+                  onClick={async () => {
+                    try {
+                      // OS標準の共有メニューで参加者URLを再共有
+                      await navigator.share({
+                        title: event?.title || '未払い回収ツール',
+                        text: buildJoinShareMessage(event, joinUrl),
+                        url: joinUrl,
+                      })
+                    } catch (err) {
+                      if (err?.name === 'AbortError') return
+                      console.warn('Native share failed:', err)
+                    }
+                  }}
+                >
+                  <Share2 size={20} strokeWidth={2} />
+                  その他のアプリで共有
+                </button>
+              )}
             </div>
-            <div className="settings-card settings-guide-card">
-              <h3><span className="settings-guide-icon" aria-hidden="true"><Megaphone size={20} strokeWidth={2} /></span>幹事からの案内</h3>
-              <p>{event.paymentInfo || DEFAULT_CASH_PAYMENT_INFO}</p>
-              {hasVisibleMemo(event.memo) && <p className="sub">{event.memo.trim()}</p>}
-            </div>
-            <button className="btn btn-outline-primary btn-lg settings-edit-trigger" onClick={startSettingsEdit}><Pencil size={20} strokeWidth={2} />イベント情報を編集</button>
-          </>
-        ) : (
-          <form className="settings-edit-form settings-card" onSubmit={saveSettings}>
-            <label className="field">
-              <span>イベント名</span>
-              <input value={settingsForm.title} onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })} />
-            </label>
-            <label className="field">
-              <span>日付</span>
-              <input type="date" value={settingsForm.eventDate} onChange={(e) => setSettingsForm({ ...settingsForm, eventDate: e.target.value })} />
-            </label>
-            <label className="field">
-              <span>1人あたりの金額</span>
-              <input type="number" min="1" step="1" value={settingsForm.amountPerPerson} onChange={(e) => setSettingsForm({ ...settingsForm, amountPerPerson: e.target.value })} />
-            </label>
-            <div className="field fixed-field">
-              <span>支払い方法</span>
-              <p className="fixed-field-value">現金回収</p>
-            </div>
-            <label className="field">
-              <span>幹事からの案内</span>
-              <p className="sub">例：当日受付で集めます / 飲み会の開始前に幹事へ渡してください</p>
-              <textarea rows="3" placeholder="例：当日受付で集めます" value={settingsForm.paymentInfo} onChange={(e) => setSettingsForm({ ...settingsForm, paymentInfo: e.target.value })} />
-            </label>
-            <label className="field">
-              <span>任意メモ</span>
-              <textarea rows="2" value={settingsForm.memo} onChange={(e) => setSettingsForm({ ...settingsForm, memo: e.target.value })} />
-            </label>
-            {settingsError && <p className="error">{settingsError}</p>}
-            <div className="settings-edit-actions">
-              <button className="btn btn-save btn-lg" disabled={settingsSaving}>{settingsSaving ? '保存中...' : '保存する'}</button>
-              <button type="button" className="btn btn-secondary btn-lg" onClick={cancelSettingsEdit} disabled={settingsSaving}>キャンセル</button>
-            </div>
-          </form>
-        )}
-        <div className="settings-card participant-share-card">
-          <h3><span className="participant-share-icon" aria-hidden="true"><UserPlus size={20} strokeWidth={2} /></span>参加者を追加する</h3>
-          <p className="sub">LINEグループに送ると、参加者が自分で名前を入力して参加できます。</p>
-          <div className="share-actions">
-            <button className="btn btn-line" disabled={!joinUrl} onClick={() => openLineShare(buildJoinShareMessage(event, joinUrl))}>LINEで共有</button>
-            {canUseNativeShare() && (
-              <button
-                className="btn btn-secondary"
-                disabled={!joinUrl}
-                onClick={async () => {
-                  try {
-                    // OS標準の共有メニューで参加者URLを再共有
-                    await navigator.share({
-                      title: event?.title || '未払い回収ツール',
-                      text: buildJoinShareMessage(event, joinUrl),
-                      url: joinUrl,
-                    })
-                  } catch (err) {
-                    if (err?.name === 'AbortError') return
-                    console.warn('Native share failed:', err)
-                  }
-                }}
-              >
-                <Share2 size={20} strokeWidth={2} />
-                その他のアプリで共有
-              </button>
-            )}
           </div>
-        </div>
-      </motion.section>
+        </section>
+      </motion.div>
       )}
         </AnimatePresence>
       </div>

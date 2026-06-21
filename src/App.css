@@ -36,17 +36,24 @@ body {
   display: grid;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  align-items: start;
 }
 
 .admin-tab-content > * {
   grid-area: 1 / 1;
+  width: 100%;
   min-width: 0;
 }
 
 .admin-tab-panel {
   display: grid;
   gap: 14px;
+  width: 100%;
   min-width: 0;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 
 .card {
