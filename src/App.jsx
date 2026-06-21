@@ -48,6 +48,13 @@ const MAIN_TAB_MOTION_DISTANCE = 20
 const MAIN_TAB_MOTION_TRANSITION = { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
 const DASHBOARD_COUNT_MOTION_TRANSITION = { duration: 0.4, ease: 'easeOut' }
 const DASHBOARD_RATE_MOTION_TRANSITION = { duration: 0.5, ease: 'easeOut' }
+const MEMBER_FILTER_MOTION_TRANSITION = {
+  opacity: { duration: 0.2, ease: 'easeOut' },
+  y: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+  layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+}
+const MEMBER_FILTER_EXIT_TRANSITION = { duration: 0.14, ease: 'easeOut' }
+const MEMBER_FILTER_MOTION_RESET_MS = 280
 const MAIN_TAB_MOTION_VARIANTS = {
   enter: (direction) => ({
     opacity: 0,
@@ -356,6 +363,7 @@ function AdminPage({ eventId, token }) {
   const [settingsSuccess, setSettingsSuccess] = useState('')
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [mainTabMotionDirection, setMainTabMotionDirection] = useState(1)
+  const [memberFilterMotionEnabled, setMemberFilterMotionEnabled] = useState(false)
   const shouldReduceMotion = useReducedMotion()
 
   const params = new URLSearchParams(window.location.search)
@@ -428,6 +436,16 @@ function AdminPage({ eventId, token }) {
       return matchesStatus && matchesName
     })
   }, [memberSearchQuery, memberStatusFilter, safeMembers])
+
+  useEffect(() => {
+    if (!memberFilterMotionEnabled) return undefined
+
+    const timeoutId = window.setTimeout(() => {
+      setMemberFilterMotionEnabled(false)
+    }, MEMBER_FILTER_MOTION_RESET_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [memberFilterMotionEnabled, memberStatusFilter])
 
   const activeReportMember = useMemo(
     () => safeMembers.find((member) => member.id === activeReportMemberId) || null,
@@ -595,6 +613,12 @@ function AdminPage({ eventId, token }) {
     setActiveAdminTab(nextTab)
   }
 
+  function changeMemberStatusFilter(nextFilter) {
+    if (nextFilter === memberStatusFilter) return
+    setMemberFilterMotionEnabled(true)
+    setMemberStatusFilter(nextFilter)
+  }
+
   const cancelSettingsEdit = () => {
     if (settingsSaving) return
     setSettingsError('')
@@ -639,6 +663,24 @@ function AdminPage({ eventId, token }) {
     exit: shouldReduceMotion ? undefined : 'exit',
     transition: shouldReduceMotion ? { duration: 0 } : MAIN_TAB_MOTION_TRANSITION,
   }
+  const shouldAnimateMemberFilter = memberFilterMotionEnabled && !shouldReduceMotion
+  const memberListItemMotionProps = shouldAnimateMemberFilter
+    ? {
+        layout: 'position',
+        initial: { opacity: 0, y: 7 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, transition: MEMBER_FILTER_EXIT_TRANSITION },
+        transition: MEMBER_FILTER_MOTION_TRANSITION,
+      }
+    : {}
+  const memberEmptyMotionProps = shouldAnimateMemberFilter
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0, transition: MEMBER_FILTER_EXIT_TRANSITION },
+        transition: { duration: 0.18, ease: 'easeOut' },
+      }
+    : {}
 
   const adminBottomNav = (
     <nav className="admin-bottom-nav" aria-label="幹事メニュー">
@@ -664,7 +706,7 @@ function AdminPage({ eventId, token }) {
   )
 
   const memberCard = (member) => (
-    <li key={member.id} className={`member-list-item member-list-item--${member.status}`}>
+    <motion.li key={member.id} className={`member-list-item member-list-item--${member.status}`} {...memberListItemMotionProps}>
       <details className="member-list-details">
         <summary className="member-list-row">
           <span className="member-avatar" aria-hidden="true">{member.name?.slice(0, 1) || '?'}</span>
@@ -691,7 +733,7 @@ function AdminPage({ eventId, token }) {
           </div>
         </div>
       </details>
-    </li>
+    </motion.li>
   )
 
   return (
@@ -1038,16 +1080,24 @@ function AdminPage({ eventId, token }) {
           </label>
 
           <div className="status-pill-row member-filter-row" role="tablist" aria-label="参加者ステータスフィルター">
-            <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => setMemberStatusFilter('all')}>すべて</button>
-            <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => setMemberStatusFilter('unpaid')}>未払い</button>
-            <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => setMemberStatusFilter('reported')}>確認待ち</button>
-            <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => setMemberStatusFilter('confirmed')}>確認済み</button>
+            <button className={`status-pill ${memberStatusFilter === 'all' ? 'pill-all pill-active' : 'pill-all'}`} onClick={() => changeMemberStatusFilter('all')}>すべて</button>
+            <button className={`status-pill ${memberStatusFilter === 'unpaid' ? 'pill-unpaid pill-active' : 'pill-unpaid'}`} onClick={() => changeMemberStatusFilter('unpaid')}>未払い</button>
+            <button className={`status-pill ${memberStatusFilter === 'reported' ? 'pill-reported pill-active' : 'pill-reported'}`} onClick={() => changeMemberStatusFilter('reported')}>確認待ち</button>
+            <button className={`status-pill ${memberStatusFilter === 'confirmed' ? 'pill-confirmed pill-active' : 'pill-confirmed'}`} onClick={() => changeMemberStatusFilter('confirmed')}>確認済み</button>
           </div>
 
-          <ul className="member-list">{filteredMembers.map(memberCard)}</ul>
-          {filteredMembers.length === 0 && (
-            <p className="member-empty">該当する参加者はいません。</p>
-          )}
+          <ul className="member-list">
+            <AnimatePresence initial={false} mode={shouldAnimateMemberFilter ? 'popLayout' : 'sync'}>
+              {filteredMembers.map(memberCard)}
+            </AnimatePresence>
+          </ul>
+          <AnimatePresence initial={false}>
+            {filteredMembers.length === 0 && (
+              <motion.p key="member-empty" className="member-empty" {...memberEmptyMotionProps}>
+                該当する参加者はいません。
+              </motion.p>
+            )}
+          </AnimatePresence>
         </section>
       </motion.div>
       )}
