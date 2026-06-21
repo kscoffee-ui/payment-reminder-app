@@ -393,7 +393,6 @@ function AdminPage({ eventId, token }) {
     amountPerPerson: '',
     paymentMethod: 'paypay',
     paymentInfo: '',
-    memo: '',
   })
   const [settingsError, setSettingsError] = useState('')
   const [settingsSuccess, setSettingsSuccess] = useState('')
@@ -664,7 +663,6 @@ function AdminPage({ eventId, token }) {
       amountPerPerson: String(event.amountPerPerson || ''),
       paymentMethod: 'cash',
       paymentInfo: event.paymentInfo || '',
-      memo: event.memo || '',
     })
     setSettingsEditing(true)
   }
@@ -759,7 +757,6 @@ function AdminPage({ eventId, token }) {
         amountPerPerson: Number(settingsForm.amountPerPerson),
         paymentMethod: 'cash',
         paymentInfo: settingsForm.paymentInfo.trim() || DEFAULT_CASH_PAYMENT_INFO,
-        memo: settingsForm.memo.trim(),
       })
       setSettingsSuccess('イベント情報を更新しました。')
       setSettingsEditing(false)
@@ -1399,10 +1396,6 @@ function AdminPage({ eventId, token }) {
                 <span>幹事からの案内</span>
                 <p className="sub">例：当日受付で集めます / 飲み会の開始前に幹事へ渡してください</p>
                 <textarea rows="3" placeholder="例：当日受付で集めます" value={settingsForm.paymentInfo} onChange={(e) => setSettingsForm({ ...settingsForm, paymentInfo: e.target.value })} />
-              </label>
-              <label className="field">
-                <span>任意メモ</span>
-                <textarea rows="2" value={settingsForm.memo} onChange={(e) => setSettingsForm({ ...settingsForm, memo: e.target.value })} />
               </label>
               {settingsError && <p className="error">{settingsError}</p>}
               <div className="settings-edit-actions">

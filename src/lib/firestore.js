@@ -302,19 +302,26 @@ export async function removeMember({ eventId, memberId }) {
 
 export async function updateEventInfo(eventId, payload) {
   const now = new Date().toISOString()
+  const updatePayload = {
+    title: payload.title,
+    eventDate: payload.eventDate,
+    amountPerPerson: payload.amountPerPerson,
+    paymentMethod: payload.paymentMethod,
+    paymentInfo: payload.paymentInfo,
+    updatedAt: now,
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'memo')) {
+    updatePayload.memo = payload.memo
+  }
+  const updateMask = Object.keys(updatePayload)
+    .map((field) => `updateMask.fieldPaths=${encodeURIComponent(field)}`)
+    .join('&')
+
   await request(
-    `${docUrl(`events/${eventId}`)}&updateMask.fieldPaths=title&updateMask.fieldPaths=eventDate&updateMask.fieldPaths=amountPerPerson&updateMask.fieldPaths=paymentMethod&updateMask.fieldPaths=paymentInfo&updateMask.fieldPaths=memo&updateMask.fieldPaths=updatedAt`,
+    `${docUrl(`events/${eventId}`)}&${updateMask}`,
     {
       method: 'PATCH',
-      body: JSON.stringify(toDoc({
-        title: payload.title,
-        eventDate: payload.eventDate,
-        amountPerPerson: payload.amountPerPerson,
-        paymentMethod: payload.paymentMethod,
-        paymentInfo: payload.paymentInfo,
-        memo: payload.memo,
-        updatedAt: now,
-      })),
+      body: JSON.stringify(toDoc(updatePayload)),
     },
   )
 }
