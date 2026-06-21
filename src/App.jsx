@@ -1134,6 +1134,8 @@ function JoinPage({ eventId, token }) {
   const [error, setError] = useState('')
   const [joining, setJoining] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState('')
   const memberSubscriptionRef = useRef(() => {})
 
   const stopMemberSubscription = () => {
@@ -1181,19 +1183,35 @@ function JoinPage({ eventId, token }) {
     }
   }, [eventId, token])
 
-  const leave = () => {
-    if (!window.confirm('この部屋から抜けますか？')) return
-    stopMemberSubscription()
-    clearMemberBinding(eventId)
-    setMember(null)
-    setName('')
-    setProofMemo('')
+  const leave = async () => {
+    if (!member || member.status !== 'unpaid' || leaving || reporting) return
+    const confirmed = window.confirm(
+      'この部屋から抜けますか？\n\n参加情報が削除され、幹事画面の参加者一覧・未払い一覧からもあなたの名前が消えます。',
+    )
+    if (!confirmed) return
+
+    setLeaving(true)
+    setLeaveError('')
+    try {
+      await removeMember({ eventId, memberId: member.id })
+      stopMemberSubscription()
+      clearMemberBinding(eventId)
+      setMember(null)
+      setName('')
+      setProofMemo('')
+    } catch (err) {
+      const detail = err?.message ? `（${err.message}）` : ''
+      setLeaveError(`退出できませんでした。通信状況を確認して、もう一度「この部屋から抜ける」を押してください。${detail}`)
+    } finally {
+      setLeaving(false)
+    }
   }
 
   const join = async () => {
     const trimmed = name.trim()
     if (!trimmed) return setError('名前を入力してください。')
     setError('')
+    setLeaveError('')
     setJoining(true)
     try {
       const memberId = await joinEvent({ eventId, name: trimmed, paymentMethod: event.paymentMethod })
@@ -1303,8 +1321,9 @@ function JoinPage({ eventId, token }) {
           <span>支払い報告メモ（任意）</span>
           <textarea placeholder="振込名義・補足など" value={proofMemo} onChange={(e) => setProofMemo(e.target.value)} />
         </label>
-        <button className="btn btn-confirm btn-lg participant-main-cta" disabled={reporting} onClick={report}>{reporting ? '送信中...' : '現金で支払ったので報告する'}</button>
-        <button className="btn btn-secondary" onClick={leave}>この部屋から抜ける</button>
+        {leaveError && <p className="error">{leaveError}</p>}
+        <button className="btn btn-confirm btn-lg participant-main-cta" disabled={reporting || leaving} onClick={report}>{reporting ? '送信中...' : '現金で支払ったので報告する'}</button>
+        <button className="btn btn-secondary" disabled={leaving || reporting} onClick={leave}>{leaving ? '退出中...' : 'この部屋から抜ける'}</button>
       </section>
     </main>
   )
