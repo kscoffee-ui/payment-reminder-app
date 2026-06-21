@@ -801,13 +801,6 @@ textarea {
   font-weight: 800;
 }
 
-.reports-ios-lead {
-  color: #475569;
-  font-size: 0.82rem;
-  line-height: 1.55;
-  font-weight: 650;
-}
-
 .reports-screen-header {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) auto;
@@ -854,18 +847,6 @@ textarea {
   color: #0f172a;
   font-size: 1.22rem;
   line-height: 1.22;
-}
-
-.reports-count-chip {
-  min-height: 28px;
-  border: 0;
-  border-radius: 999px;
-  padding: 5px 11px;
-  background: #fff7ed;
-  color: #c2410c;
-  font-size: 0.82rem;
-  font-weight: 800;
-  white-space: nowrap;
 }
 
 .reports-filter-row {
