@@ -32,6 +32,23 @@ body {
   padding-bottom: calc(172px + env(safe-area-inset-bottom));
 }
 
+.admin-tab-content {
+  display: grid;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-tab-content > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.admin-tab-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
 .card {
   background: #fff;
   border-radius: 20px;

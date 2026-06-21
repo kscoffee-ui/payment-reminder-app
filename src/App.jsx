@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowLeft, Bell, Calendar, CheckCircle2, ChevronRight, Clock3, FileText, Info, JapaneseYen, LayoutDashboard, Megaphone, MoreVertical, Pencil, Search, Settings, Share2, UserPlus, Users, Wallet } from 'lucide-react'
 import './App.css'
 import {
@@ -42,6 +43,31 @@ function move(path) {
 }
 
 const DEFAULT_CASH_PAYMENT_INFO = '幹事に現金で直接渡してください'
+const MAIN_ADMIN_TABS = ['dashboard', 'members', 'settings']
+const MAIN_TAB_MOTION_DISTANCE = 20
+const MAIN_TAB_MOTION_TRANSITION = { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+const MAIN_TAB_MOTION_VARIANTS = {
+  enter: (direction) => ({
+    opacity: 0,
+    x: direction * MAIN_TAB_MOTION_DISTANCE,
+  }),
+  center: {
+    opacity: 1,
+    x: 0,
+  },
+  exit: (direction) => ({
+    opacity: 0,
+    x: direction * -MAIN_TAB_MOTION_DISTANCE,
+  }),
+}
+
+function getMainAdminTabIndex(tab) {
+  return MAIN_ADMIN_TABS.indexOf(tab)
+}
+
+function isMainAdminTab(tab) {
+  return getMainAdminTabIndex(tab) !== -1
+}
 
 function paymentLabel(method) {
   return { paypay: 'PayPay', cash: '現金', bank: '銀行振込', other: 'その他' }[method] || method
@@ -291,6 +317,8 @@ function AdminPage({ eventId, token }) {
   const [settingsError, setSettingsError] = useState('')
   const [settingsSuccess, setSettingsSuccess] = useState('')
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const [mainTabMotionDirection, setMainTabMotionDirection] = useState(1)
+  const shouldReduceMotion = useReducedMotion()
 
   const params = new URLSearchParams(window.location.search)
   const created = params.get('created') === '1'
@@ -471,13 +499,13 @@ function AdminPage({ eventId, token }) {
 
   const openEventSettingsEdit = () => {
     startSettingsEdit()
-    setActiveAdminTab('settings')
+    switchAdminTab('settings')
   }
 
   const openUnpaidMembers = () => {
     setMemberSearchQuery('')
     setMemberStatusFilter('unpaid')
-    setActiveAdminTab('members')
+    switchAdminTab('members')
   }
 
   const openReportsInbox = () => {
@@ -505,6 +533,18 @@ function AdminPage({ eventId, token }) {
       setActiveReportMemberId('')
       setActiveAdminTab('reportsInbox')
     }
+  }
+
+  function switchAdminTab(nextTab) {
+    const currentIndex = getMainAdminTabIndex(activeAdminTab)
+    const nextIndex = getMainAdminTabIndex(nextTab)
+
+    if (nextIndex !== -1 && currentIndex !== nextIndex) {
+      const baseIndex = currentIndex === -1 ? 0 : currentIndex
+      setMainTabMotionDirection(nextIndex > baseIndex ? 1 : -1)
+    }
+
+    setActiveAdminTab(nextTab)
   }
 
   const cancelSettingsEdit = () => {
@@ -543,23 +583,30 @@ function AdminPage({ eventId, token }) {
     }
   }
 
-
+  const mainTabMotionProps = {
+    custom: mainTabMotionDirection,
+    variants: MAIN_TAB_MOTION_VARIANTS,
+    initial: shouldReduceMotion ? false : 'enter',
+    animate: 'center',
+    exit: shouldReduceMotion ? undefined : 'exit',
+    transition: shouldReduceMotion ? { duration: 0 } : MAIN_TAB_MOTION_TRANSITION,
+  }
 
   const adminBottomNav = (
     <nav className="admin-bottom-nav" aria-label="幹事メニュー">
-      <button className={`admin-bottom-nav__item ${['dashboard', 'reportsInbox', 'reportDetail'].includes(activeAdminTab) ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('dashboard')}>
+      <button className={`admin-bottom-nav__item ${['dashboard', 'reportsInbox', 'reportDetail'].includes(activeAdminTab) ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => switchAdminTab('dashboard')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
           <LayoutDashboard size={22} strokeWidth={2.4} />
         </span>
         <span>ダッシュボード</span>
       </button>
-      <button className={`admin-bottom-nav__item ${activeAdminTab === 'members' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('members')}>
+      <button className={`admin-bottom-nav__item ${activeAdminTab === 'members' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => switchAdminTab('members')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
           <Users size={22} strokeWidth={2.4} />
         </span>
         <span>参加者一覧</span>
       </button>
-      <button className={`admin-bottom-nav__item ${activeAdminTab === 'settings' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => setActiveAdminTab('settings')}>
+      <button className={`admin-bottom-nav__item ${activeAdminTab === 'settings' ? 'admin-bottom-nav__item--active' : ''}`} onClick={() => switchAdminTab('settings')}>
         <span className="admin-bottom-nav__icon" aria-hidden="true">
           <Settings size={22} strokeWidth={2.4} />
         </span>
@@ -616,8 +663,10 @@ function AdminPage({ eventId, token }) {
           </button>
         )}
       </AppHeader>
+      <div className="admin-tab-content">
+        <AnimatePresence initial={false} custom={mainTabMotionDirection}>
       {activeAdminTab === 'dashboard' && (
-        <>
+        <motion.div key="dashboard" className="admin-tab-panel" {...mainTabMotionProps}>
           <section className="card admin-event-card">
             <div className="admin-event-card__icon" aria-hidden="true">
               <Calendar size={22} strokeWidth={2} />
@@ -711,11 +760,11 @@ function AdminPage({ eventId, token }) {
               </button>
             </div>
           </section>
-        </>
+        </motion.div>
       )}
 
       {activeAdminTab === 'reportsInbox' && (
-      <section className="reports-inbox-screen">
+      <section key="reportsInbox" className="reports-inbox-screen">
         <div className="reports-ios-header">
           <button
             type="button"
@@ -723,7 +772,7 @@ function AdminPage({ eventId, token }) {
             aria-label="ダッシュボードへ戻る"
             onClick={() => {
               setOpenReportActionMemberId('')
-              setActiveAdminTab('dashboard')
+              switchAdminTab('dashboard')
             }}
           >
             <ArrowLeft size={19} strokeWidth={2.5} aria-hidden="true" />
@@ -865,7 +914,7 @@ function AdminPage({ eventId, token }) {
       )}
 
       {activeAdminTab === 'reportDetail' && (
-      <section className="report-detail-screen">
+      <section key="reportDetail" className="report-detail-screen">
         <div className="reports-screen-header">
           <button type="button" className="reports-back-button" aria-label="確認待ちボックスへ戻る" onClick={backToReportsInbox}>
             <ArrowLeft size={21} strokeWidth={2.4} aria-hidden="true" />
@@ -926,7 +975,7 @@ function AdminPage({ eventId, token }) {
       )}
 
       {activeAdminTab === 'members' && (
-      <section className="participants-screen">
+      <motion.section key="members" className="participants-screen" {...mainTabMotionProps}>
         <h1 className="participants-title">参加者一覧</h1>
 
         <label className="member-search">
@@ -950,11 +999,11 @@ function AdminPage({ eventId, token }) {
         {filteredMembers.length === 0 && (
           <p className="member-empty">該当する参加者はいません。</p>
         )}
-      </section>
+      </motion.section>
       )}
 
       {activeAdminTab === 'settings' && (
-      <section className="admin-settings-screen">
+      <motion.section key="settings" className="admin-settings-screen" {...mainTabMotionProps}>
         <h1 className="settings-page-title">設定 / イベント情報</h1>
         {settingsSuccess && <p className="success">{settingsSuccess}</p>}
         {!settingsEditing ? (
@@ -1045,8 +1094,10 @@ function AdminPage({ eventId, token }) {
             )}
           </div>
         </div>
-      </section>
+      </motion.section>
       )}
+        </AnimatePresence>
+      </div>
 
       {returnToUnpaidMember && (
         <div className="report-return-sheet" role="dialog" aria-modal="true" aria-labelledby="report-return-title">
