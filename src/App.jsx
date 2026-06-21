@@ -749,9 +749,7 @@ function AdminPage({ eventId, token }) {
           </button>
           <div className="reports-ios-title-row">
             <h1>確認待ち一覧</h1>
-            <span className="reports-count-chip">{counts.reportedMembers.length}人</span>
           </div>
-          <p className="reports-ios-lead">支払い報告が届いています。内容を確認して「確認済み」にしてください。</p>
         </div>
 
         <label className="member-search">
@@ -766,10 +764,6 @@ function AdminPage({ eventId, token }) {
             }}
           />
         </label>
-
-        <div className="status-pill-row member-filter-row" role="tablist" aria-label="確認待ちステータス">
-          <button type="button" className="status-pill pill-reported pill-active">確認待ち {counts.reportedMembers.length}人</button>
-        </div>
 
         {counts.reportedMembers.length > 0 ? (
           <>
