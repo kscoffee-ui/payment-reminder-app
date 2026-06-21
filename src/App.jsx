@@ -17,6 +17,7 @@ import {
 import { buildReminderMessage, createLineShareUrl } from './lib/reminder'
 import { clearMemberBinding, getAdminEvents, getMemberBinding, removeAdminEvent, saveAdminEvent, setMemberBinding } from './lib/storage'
 import kaishuruLogo from './assets/kaishuru-logo.png'
+import StudioPage from './dev/studio/StudioPage'
 
 function AppHeader({ children }) {
   return (
@@ -31,6 +32,7 @@ function parseRoute() {
   const [, root, eventId] = window.location.pathname.split('/')
   const token = new URLSearchParams(window.location.search).get('token') || ''
 
+  if (root === 'dev' && eventId === 'studio' && import.meta.env.DEV) return { mode: 'studio', eventId: '', token: '' }
   if (root === 'admin' && eventId) return { mode: 'admin', eventId, token }
   if (root === 'join' && eventId) return { mode: 'join', eventId, token }
   return { mode: 'create', eventId: '', token: '' }
@@ -627,7 +629,7 @@ function AdminPage({ eventId, token }) {
             aria-label={`確認待ち ${counts.reportedMembers.length}件`}
             onClick={openReportsInbox}
           >
-            <Bell size={25} strokeWidth={2.3} aria-hidden="true" />
+            <Bell size="var(--ks-size-header-icon, 25px)" strokeWidth={2.3} aria-hidden="true" />
             {counts.reportedMembers.length > 0 && (
               <span className="reports-bell-badge">{counts.reportedMembers.length}</span>
             )}
@@ -1319,6 +1321,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
+  if (route.mode === 'studio' && import.meta.env.DEV) return <StudioPage />
   if (route.mode === 'admin') return <AdminErrorBoundary><AdminPage eventId={route.eventId} token={route.token} /></AdminErrorBoundary>
   if (route.mode === 'join') return <JoinPage eventId={route.eventId} token={route.token} />
   return <EventCreatePage />
